@@ -1,0 +1,147 @@
+/* Global App Styles for R2Nova */
+
+.app {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  width: 100vw;
+  background-color: #0b1326;
+  color: #dae2fd;
+  overflow: hidden;
+}
+
+.app-body {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+  position: relative;
+}
+
+.main-content {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  background-color: #131b2e;
+  position: relative;
+}
+
+/* Glassmorphism utilities */
+.glass {
+  background: rgba(23, 31, 51, 0.7);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+
+.glass-panel {
+  background: rgba(23, 31, 51, 0.85);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(165, 140, 125, 0.15);
+}
+
+/* Ghost border utility */
+.ghost-border {
+  border: 1px solid rgba(165, 140, 125, 0.15);
+}
+
+/* Gradient button styles */
+.btn-gradient {
+  background: linear-gradient(135deg, #f38020 0%, #ffb787 100%);
+  color: #502400;
+  font-weight: 700;
+  transition: all 0.2s ease;
+}
+
+.btn-gradient:hover {
+  filter: brightness(1.1);
+  transform: translateY(-1px);
+}
+
+.btn-gradient:active {
+  transform: scale(0.98);
+}
+
+/* Empty state styling */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: #abb9d1;
+  text-align: center;
+  padding: 2rem;
+}
+
+.empty-state-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 0.75rem;
+  background: linear-gradient(135deg, #f38020 0%, #ffb787 100%);
+  color: #502400;
+  margin-bottom: 24px;
+}
+
+.empty-state h3 {
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: #dae2fd;
+  margin-bottom: 8px;
+  font-family: 'Manrope', sans-serif;
+}
+
+.empty-state p {
+  font-size: 0.875rem;
+  margin-bottom: 24px;
+  max-width: 320px;
+}
+
+/* Animation utilities */
+@keyframes pulse-glow {
+  0%,
+  100% {
+    box-shadow: 0 0 8px rgba(243, 128, 32, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 16px rgba(243, 128, 32, 0.6);
+  }
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
+/* Selection styling */
+::selection {
+  background: rgba(243, 128, 32, 0.3);
+  color: #ffb787;
+}
+
+/* Focus ring styling */
+*:focus-visible {
+  outline: 2px solid #f38020;
+  outline-offset: 2px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .app-body {
+    flex-direction: column;
+  }
+  .main-content {
+    border-left: none;
+  }
+}
+
+/* Hide scrollbar for specific elements */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
