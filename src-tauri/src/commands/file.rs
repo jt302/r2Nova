@@ -1,10 +1,12 @@
 use tauri::{command, AppHandle, Emitter, State};
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
+use std::sync::Arc;
 
 use crate::commands::ApiResponse;
 use crate::errors::AppError;
 use crate::models::ObjectInfo;
+
 use crate::AppState;
 
 #[derive(Debug, Deserialize)]
@@ -149,76 +151,66 @@ pub async fn download_file(
     state: State<'_, AppState>,
     app_handle: AppHandle,
 ) -> Result<ApiResponse<TransferResponse>, AppError> {
-    let config_manager = state.config_manager.lock().await;
-    let account = config_manager
-        .get_active_account()
-        .ok_or_else(|| AppError::Config("No active account".to_string()))?;
+    // Get all data we need before spawning the background task
+    let (account, secret_key) = {
+        let config_manager = state.config_manager.lock().await;
+        let account = config_manager
+            .get_active_account()
+            .ok_or_else(|| AppError::Config("No active account".to_string()))?;
+        let secret_key = config_manager.get_secret_key(&account.id)?;
+        (account, secret_key)
+    };
 
-    let secret_key = config_manager.get_secret_key(&account.id)?;
-    drop(config_manager);
+    // Create R2 client and get file size
+    let (client, total_bytes) = {
+        let mut r2_manager = state.r2_manager.lock().await;
+        let client = r2_manager.get_or_create(&account, &secret_key).await?;
+        let path = PathBuf::from(&request.local_path);
+        let head_resp = client
+            .get_object_head(&request.bucket, &request.key)
+            .await?;
+        let total_bytes = head_resp.content_length.unwrap_or(0);
+        (path, total_bytes)
+    };
 
-    let mut r2_manager = state.r2_manager.lock().await;
-    let client = r2_manager.get_or_create(&account, &secret_key).await?;
-
-    let path = PathBuf::from(&request.local_path);
-    
-    let head_resp = client
-        .get_object_head(&request.bucket, &request.key)
-        .await?;
-    let total_bytes = head_resp.content_length.unwrap_or(0);
-
-    let mut transfer_manager = state.transfer_manager.lock().await;
-    let task_id = transfer_manager.create_download_task(
-        request.bucket.clone(),
-        request.key.clone(),
-        request.local_path.clone(),
-        total_bytes,
-    );
-    drop(transfer_manager);
+    // Create transfer task
+    let task_id = {
+        let mut transfer_manager = state.transfer_manager.lock().await;
+        let task_id = transfer_manager.create_download_task(
+            request.bucket.clone(),
+            request.key.clone(),
+            request.local_path.clone(),
+            total_bytes,
+        );
+        task_id
+    };
 
     let task_id_clone = task_id.clone();
     let bucket = request.bucket.clone();
     let key = request.key.clone();
+    let path = PathBuf::from(&request.local_path);
+    let filename = key.split('/').last().unwrap_or(&key).to_string();
     
-    // Spawn download task in background so the command returns immediately
+    let config_manager_arc = Arc::clone(&state.config_manager);
+    let r2_manager_arc = Arc::clone(&state.r2_manager);
+    let transfer_manager_arc = Arc::clone(&state.transfer_manager);
+    
     tokio::spawn(async move {
-        let state_for_download = state.clone();
-        let task_id_for_download = task_id_clone.clone();
-        let app_handle_for_emit = app_handle.clone();
-        
-        let result = async {
-            let mut r2_manager = state_for_download.r2_manager.lock().await;
-            let client = r2_manager.get_or_create(&account, &secret_key).await?;
-            drop(r2_manager);
-            
-            client
-                .download_object_with_progress(
-                    &bucket,
-                    &key,
-                    &path,
-                    total_bytes,
-                    move |bytes_transferred, speed_mbps| {
-                        if let Ok(mut tm) = state_for_download.transfer_manager.try_lock() {
-                            let _ = tm.update_progress(&task_id_for_download, bytes_transferred, speed_mbps);
-                        }
-                        // Emit progress event to frontend
-                        let _ = app_handle_for_emit.emit("transfer-progress", serde_json::json!({
-                            "task_id": task_id_for_download,
-                            "transfer_type": "download",
-                            "filename": key.split('/').last().unwrap_or(&key),
-                            "bucket": &bucket,
-                            "key": &key,
-                            "bytes_transferred": bytes_transferred,
-                            "bytes_total": total_bytes,
-                            "speed_mbps": speed_mbps,
-                            "status": "in_progress",
-                        }));
-                    },
-                )
-                .await
-        }.await;
+        let result = download_in_background(
+            r2_manager_arc.clone(),
+            transfer_manager_arc.clone(),
+            &account,
+            &secret_key,
+            &bucket,
+            &key,
+            &path,
+            total_bytes,
+            &task_id_clone,
+            &filename,
+            app_handle.clone(),
+        ).await;
 
-        let mut transfer_manager = state.transfer_manager.lock().await;
+        let mut transfer_manager = transfer_manager_arc.lock().await;
         match result {
             Ok(()) => {
                 let _ = transfer_manager.complete_task(&task_id_clone);
@@ -240,8 +232,54 @@ pub async fn download_file(
         }
     });
 
-    // Return immediately with task_id
     Ok(ApiResponse::success(TransferResponse { task_id }))
+}
+
+async fn download_in_background(
+    r2_manager: Arc<tokio::sync::Mutex<crate::services::R2ClientManager>>,
+    transfer_manager: Arc<tokio::sync::Mutex<crate::services::TransferManager>>,
+    account: &crate::models::Account,
+    secret_key: &str,
+    bucket: &str,
+    key: &str,
+    path: &PathBuf,
+    total_bytes: i64,
+    task_id: &str,
+    filename: &str,
+    app_handle: AppHandle,
+) -> Result<(), AppError> {
+    let mut r2_manager = r2_manager.lock().await;
+    let client = r2_manager.get_or_create(account, secret_key).await?;
+    
+    let task_id_clone = task_id.to_string();
+    let filename_clone = filename.to_string();
+    let bucket_clone = bucket.to_string();
+    let key_clone = key.to_string();
+    
+    client
+        .download_object_with_progress(
+            bucket,
+            key,
+            path,
+            total_bytes,
+            move |bytes_transferred, speed_mbps| {
+                if let Ok(mut tm) = transfer_manager.try_lock() {
+                    let _ = tm.update_progress(&task_id_clone, bytes_transferred, speed_mbps);
+                }
+                let _ = app_handle.emit("transfer-progress", serde_json::json!({
+                    "task_id": task_id_clone,
+                    "transfer_type": "download",
+                    "filename": &filename_clone,
+                    "bucket": &bucket_clone,
+                    "key": &key_clone,
+                    "bytes_transferred": bytes_transferred,
+                    "bytes_total": total_bytes,
+                    "speed_mbps": speed_mbps,
+                    "status": "in_progress",
+                }));
+            },
+        )
+        .await
 }
 
 #[command]
