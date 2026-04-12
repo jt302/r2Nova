@@ -1,8 +1,8 @@
 # DEVELOPMENT.md - 开发规范与流程
 
-**文档定位**: 环境搭建、编码规范、测试策略、CI/CD  
-**目标读者**: 新加入的开发者、贡献者、DevOps 工程师  
-**版本**: v1.0.0  
+**文档定位**: 环境搭建、编码规范、测试策略、CI/CD
+**目标读者**: 新加入的开发者、贡献者、DevOps 工程师
+**版本**: v1.0.0
 **最后更新**: 2024-XX-XX
 
 ---
@@ -11,12 +11,12 @@
 
 ### 1.1 前置依赖
 
-| 工具 | 版本要求 | 安装命令/链接 |
-|------|---------|--------------|
-| **Rust** | 1.75+ | [rustup.rs](https://rustup.rs) |
-| **Node.js** | 20+ LTS | [nodejs.org](https://nodejs.org) |
-| **pnpm** | 8+ | `npm install -g pnpm` |
-| **Git** | 2.30+ | 系统自带或官网下载 |
+| 工具        | 版本要求 | 安装命令/链接                    |
+| ----------- | -------- | -------------------------------- |
+| **Rust**    | 1.75+    | [rustup.rs](https://rustup.rs)   |
+| **Node.js** | 20+ LTS  | [nodejs.org](https://nodejs.org) |
+| **pnpm**    | 8+       | `npm install -g pnpm`            |
+| **Git**     | 2.30+    | 系统自带或官网下载               |
 
 ### 1.2 一键初始化
 
@@ -61,6 +61,7 @@ cargo tauri --version
 #### VSCode（推荐）
 
 **必需插件**:
+
 - `rust-lang.rust-analyzer` - Rust 语言支持
 - `serayuzgur.crates` - Cargo.toml 依赖管理
 - `tamasfe.even-better-toml` - TOML 语法高亮
@@ -189,6 +190,7 @@ main                    # 生产分支，只接受 PR
 ```
 
 **类型（Type）**:
+
 - `feat`: 新功能
 - `fix`: Bug 修复
 - `docs`: 文档更新
@@ -199,6 +201,7 @@ main                    # 生产分支，只接受 PR
 - `chore`: 构建/工具/依赖
 
 **作用域（Scope）**:
+
 - `frontend`: 前端代码
 - `backend`: Rust 后端
 - `ui`: UI 组件
@@ -251,10 +254,10 @@ interface AccountCardProps {
 export function AccountCard({ account, onSelect }: AccountCardProps) {
   // 3. 状态 hooks 在前
   const [isLoading, setIsLoading] = useState(false)
-  
+
   // 4. 派生状态
   const displayName = account.name || account.id
-  
+
   // 5. 事件处理
   const handleClick = async () => {
     setIsLoading(true)
@@ -264,7 +267,7 @@ export function AccountCard({ account, onSelect }: AccountCardProps) {
       setIsLoading(false)
     }
   }
-  
+
   // 6. 渲染
   return (
     <div className="account-card">
@@ -279,15 +282,15 @@ export function AccountCard({ account, onSelect }: AccountCardProps) {
 
 #### 命名规范
 
-| 类型 | 命名方式 | 示例 |
-|------|---------|------|
-| 组件 | PascalCase | `FileUploader`, `TransferList` |
-| Hooks | camelCase + use | `useR2Client`, `useTransfer` |
-| Store | camelCase + Store | `accountStore`, `fileStore` |
-| 类型 | PascalCase | `Account`, `TransferStatus` |
-| 工具函数 | camelCase | `formatBytes`, `validateToken` |
-| 常量 | UPPER_SNAKE_CASE | `MAX_UPLOAD_SIZE` |
-| 文件 | kebab-case | `file-uploader.tsx`, `use-r2-client.ts` |
+| 类型     | 命名方式          | 示例                                    |
+| -------- | ----------------- | --------------------------------------- |
+| 组件     | PascalCase        | `FileUploader`, `TransferList`          |
+| Hooks    | camelCase + use   | `useR2Client`, `useTransfer`            |
+| Store    | camelCase + Store | `accountStore`, `fileStore`             |
+| 类型     | PascalCase        | `Account`, `TransferStatus`             |
+| 工具函数 | camelCase         | `formatBytes`, `validateToken`          |
+| 常量     | UPPER_SNAKE_CASE  | `MAX_UPLOAD_SIZE`                       |
+| 文件     | kebab-case        | `file-uploader.tsx`, `use-r2-client.ts` |
 
 #### 类型定义
 
@@ -350,17 +353,17 @@ pub struct R2Client {
 // 4. 实现块
 impl R2Client {
     /// 创建新客户端
-    /// 
+    ///
     /// # Arguments
     /// * `config` - R2 配置
-    /// 
+    ///
     /// # Errors
     /// 当配置无效时返回 `AppError::Config`
     pub async fn new(config: R2Config) -> Result<Self, AppError> {
         let client = build_client(&config).await?;
         Ok(Self { client, config })
     }
-    
+
     /// 列出所有 Buckets
     pub async fn list_buckets(&self) -> Result<Vec<BucketInfo>, AppError> {
         let resp = self.client
@@ -368,7 +371,7 @@ impl R2Client {
             .send()
             .await
             .map_err(|e| AppError::R2Error(e.to_string()))?;
-        
+
         Ok(parse_buckets(resp))
     }
 }
@@ -391,13 +394,13 @@ fn parse_buckets(resp: ListBucketsOutput) -> Vec<BucketInfo> {
 pub enum AppError {
     #[error("R2 API 错误: {0}")]
     R2Error(String),
-    
+
     #[error("IO 错误: {0}")]
     Io(#[from] std::io::Error),
-    
+
     #[error("配置错误: {0}")]
     Config(String),
-    
+
     #[error("验证错误: {field}: {message}")]
     Validation { field: String, message: String },
 }
@@ -406,10 +409,10 @@ pub enum AppError {
 pub async fn risky_operation() -> Result<Data, AppError> {
     let file = std::fs::read_to_string("config.json")
         .map_err(|e| AppError::Config(format!("无法读取配置: {}", e)))?;
-    
+
     let data: Data = serde_json::from_str(&file)
         .map_err(|e| AppError::Config(format!("配置格式错误: {}", e)))?;
-    
+
     Ok(data)
 }
 
@@ -444,10 +447,10 @@ use tokio::join;
 async fn fetch_multiple() -> Result<(A, B), Error> {
     let a = fetch_a();
     let b = fetch_b();
-    
+
     // 并行执行
     let (result_a, result_b) = join!(a, b);
-    
+
     Ok((result_a?, result_b?))
 }
 
@@ -492,12 +495,12 @@ async fn cancellable_operation(
 #[cfg(test)]
 mod tests {
     use super::*;
-    
+
     // 使用 mock 替代真实 R2 调用
     struct MockR2Client {
         buckets: Vec<BucketInfo>,
     }
-    
+
     #[tokio::test]
     async fn test_list_buckets_success() {
         // Arrange
@@ -506,21 +509,21 @@ mod tests {
                 BucketInfo { name: "test-bucket".into() },
             ],
         };
-        
+
         // Act
         let result = mock.list_buckets().await;
-        
+
         // Assert
         assert!(result.is_ok());
         assert_eq!(result.unwrap().len(), 1);
     }
-    
+
     #[tokio::test]
     async fn test_list_buckets_empty() {
         let mock = MockR2Client { buckets: vec![] };
-        
+
         let result = mock.list_buckets().await;
-        
+
         assert!(result.is_ok());
         assert!(result.unwrap().is_empty());
     }
@@ -539,12 +542,12 @@ fn test_list_buckets_command() {
         .invoke_handler(tauri::generate_handler![list_buckets])
         .build(tauri::generate_context!())
         .expect("failed to build app");
-    
+
     let response = app.invoke(
         "list_buckets",
         ListBucketsRequest { account_id: "test".into() }
     );
-    
+
     assert!(response.is_ok());
 }
 ```
@@ -558,21 +561,21 @@ import { test, expect } from '@playwright/test'
 test('用户能上传文件到 R2', async ({ page }) => {
   // 1. 打开应用
   await page.goto('tauri://localhost')
-  
+
   // 2. 添加测试账号
   await page.click('[data-testid="add-account"]')
   await page.fill('[data-testid="token-input"]', 'test-token')
   await page.click('[data-testid="save-account"]')
-  
+
   // 3. 选择 Bucket
   await page.click('[data-testid="bucket-test-bucket"]')
-  
+
   // 4. 上传文件
   const fileChooserPromise = page.waitForEvent('filechooser')
   await page.click('[data-testid="upload-button"]')
   const fileChooser = await fileChooserPromise
   await fileChooser.setFiles('test-file.txt')
-  
+
   // 5. 验证上传成功
   await expect(page.locator('[data-testid="upload-success"]')).toBeVisible()
 })
@@ -580,12 +583,12 @@ test('用户能上传文件到 R2', async ({ page }) => {
 
 ### 4.5 测试覆盖率要求
 
-| 模块 | 覆盖率目标 | 测量工具 |
-|------|-----------|---------|
-| Rust 业务逻辑 | > 80% | cargo-tarpaulin |
-| IPC 命令 | 100% | cargo test |
-| UI 组件 | > 60% | Vitest + React Testing Library |
-| E2E 关键流程 | 100% | Playwright |
+| 模块          | 覆盖率目标 | 测量工具                       |
+| ------------- | ---------- | ------------------------------ |
+| Rust 业务逻辑 | > 80%      | cargo-tarpaulin                |
+| IPC 命令      | 100%       | cargo test                     |
+| UI 组件       | > 60%      | Vitest + React Testing Library |
+| E2E 关键流程  | 100%       | Playwright                     |
 
 ```bash
 # 生成覆盖率报告
@@ -633,13 +636,13 @@ RUST_LOG=r2nova::services=trace pnpm tauri dev
 
 ### 5.3 常见问题
 
-| 问题 | 解决方案 |
-|------|---------|
-| Tauri 命令无响应 | 检查 Rust panic，查看控制台 |
-| 热重载失效 | 重启 `pnpm tauri dev` |
-| Rust 编译慢 | 使用 `cargo check` 替代 `cargo build` |
-| 前端端口冲突 | 修改 `vite.config.ts` 中的 port |
-| macOS 权限错误 | 在 系统设置 > 安全性与隐私 中允许 |
+| 问题             | 解决方案                              |
+| ---------------- | ------------------------------------- |
+| Tauri 命令无响应 | 检查 Rust panic，查看控制台           |
+| 热重载失效       | 重启 `pnpm tauri dev`                 |
+| Rust 编译慢      | 使用 `cargo check` 替代 `cargo build` |
+| 前端端口冲突     | 修改 `vite.config.ts` 中的 port       |
+| macOS 权限错误   | 在 系统设置 > 安全性与隐私 中允许     |
 
 ---
 
@@ -675,24 +678,24 @@ jobs:
     strategy:
       matrix:
         platform: [macos-latest, ubuntu-latest, windows-latest]
-    
+
     runs-on: ${{ matrix.platform }}
-    
+
     steps:
       - uses: actions/checkout@v4
-      
+
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-      
+
       - uses: dtolnay/rust-action@stable
-      
+
       - name: Install dependencies
         run: pnpm install
-      
+
       - name: Build
         run: pnpm tauri build
-      
+
       - name: Upload
         uses: actions/upload-artifact@v4
         with:
@@ -776,6 +779,7 @@ git push origin main --tags
 ---
 
 **相关文档**:
+
 - 🤖 [AI Agent 指南](./AGENTS.md) - 开发总纲
 - 📋 [项目规划](./PROJECT.md) - 路线图与里程碑
 - 🏗 [技术架构](./ARCHITECTURE.md) - 系统设计细节

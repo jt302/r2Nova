@@ -92,14 +92,14 @@ export function Sidebar({
                 item.onClick()
               }}
               className={cn(
-                'w-full justify-start gap-3 px-3 py-2.5 font-medium text-sm rounded-lg relative',
+                'w-full !justify-start gap-3 px-3 py-2.5 font-medium text-sm rounded-lg relative',
                 isActive
                   ? 'bg-muted text-primary before:absolute before:left-0 before:top-2 before:bottom-2 before:w-1 before:bg-primary before:rounded-r-full'
                   : 'text-muted-foreground hover:text-foreground hover:bg-muted'
               )}
             >
               <Icon className={cn('w-5 h-5', isActive && 'text-primary')} />
-              <span className="flex-1">{item.label}</span>
+              <span className="flex-1 text-left">{item.label}</span>
               {item.badge && (
                 <Badge variant="default" className="text-xs px-2 py-0.5 min-w-[20px] text-center">
                   {item.badge}
