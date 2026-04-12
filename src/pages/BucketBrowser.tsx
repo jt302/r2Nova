@@ -338,19 +338,37 @@ export function BucketBrowser({ account, selectedBucket, onBucketSelect }: Bucke
     }
   }
 
+  const addTask = useTransferStore(state => state.addTask)
+
   const handleDownload = async (obj: ObjectInfo) => {
     if (!selectedBucket || obj.is_directory) return
 
     const savePath = await dialogService.saveFile(obj.key.split('/').pop())
     if (!savePath) return
 
-    setDownloading(obj.key)
     setLocalError(null)
     try {
-      await fileService.downloadFile(selectedBucket, obj.key, savePath)
+      // Start download - returns immediately with task_id, download runs in background
+      const taskId = await fileService.downloadFile(selectedBucket, obj.key, savePath)
+
+      // Add task to store for tracking in TransferCenter
+      addTask({
+        id: taskId,
+        type: 'download',
+        status: 'in_progress',
+        filename: obj.key.split('/').pop() || obj.key,
+        bucket: selectedBucket,
+        key: obj.key,
+        bytesTotal: obj.size,
+        bytesTransferred: 0,
+        speedMbps: 0,
+      })
+
+      // Show brief feedback then clear the downloading state
+      setDownloading(obj.key)
+      setTimeout(() => setDownloading(null), 500)
     } catch (err) {
       setLocalError(err instanceof Error ? err.message : t('bucket.downloadError'))
-    } finally {
       setDownloading(null)
     }
   }

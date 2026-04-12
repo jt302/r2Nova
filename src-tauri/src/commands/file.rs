@@ -147,7 +147,7 @@ pub async fn upload_file(
 pub async fn download_file(
     request: DownloadFileRequest,
     state: State<'_, AppState>,
-    _app_handle: AppHandle,
+    app_handle: AppHandle,
 ) -> Result<ApiResponse<TransferResponse>, AppError> {
     let config_manager = state.config_manager.lock().await;
     let account = config_manager
@@ -176,35 +176,72 @@ pub async fn download_file(
     );
     drop(transfer_manager);
 
-    let state_for_callback = state.clone();
-    let task_id_for_callback = task_id.clone();
+    let task_id_clone = task_id.clone();
+    let bucket = request.bucket.clone();
+    let key = request.key.clone();
     
-    let result = client
-        .download_object_with_progress(
-            &request.bucket,
-            &request.key,
-            &path,
-            total_bytes,
-            move |bytes_transferred, speed_mbps| {
-                if let Ok(mut tm) = state_for_callback.transfer_manager.try_lock() {
-                    let _ = tm.update_progress(&task_id_for_callback, bytes_transferred, speed_mbps);
-                }
-            },
-        )
-        .await;
+    // Spawn download task in background so the command returns immediately
+    tokio::spawn(async move {
+        let state_for_download = state.clone();
+        let task_id_for_download = task_id_clone.clone();
+        let app_handle_for_emit = app_handle.clone();
+        
+        let result = async {
+            let mut r2_manager = state_for_download.r2_manager.lock().await;
+            let client = r2_manager.get_or_create(&account, &secret_key).await?;
+            drop(r2_manager);
+            
+            client
+                .download_object_with_progress(
+                    &bucket,
+                    &key,
+                    &path,
+                    total_bytes,
+                    move |bytes_transferred, speed_mbps| {
+                        if let Ok(mut tm) = state_for_download.transfer_manager.try_lock() {
+                            let _ = tm.update_progress(&task_id_for_download, bytes_transferred, speed_mbps);
+                        }
+                        // Emit progress event to frontend
+                        let _ = app_handle_for_emit.emit("transfer-progress", serde_json::json!({
+                            "task_id": task_id_for_download,
+                            "transfer_type": "download",
+                            "filename": key.split('/').last().unwrap_or(&key),
+                            "bucket": &bucket,
+                            "key": &key,
+                            "bytes_transferred": bytes_transferred,
+                            "bytes_total": total_bytes,
+                            "speed_mbps": speed_mbps,
+                            "status": "in_progress",
+                        }));
+                    },
+                )
+                .await
+        }.await;
 
-    let mut transfer_manager = state.transfer_manager.lock().await;
-    match result {
-        Ok(()) => {
-            transfer_manager.complete_task(&task_id)?;
-            Ok(ApiResponse::success(TransferResponse { task_id }))
+        let mut transfer_manager = state.transfer_manager.lock().await;
+        match result {
+            Ok(()) => {
+                let _ = transfer_manager.complete_task(&task_id_clone);
+                let _ = app_handle.emit("transfer-completed", serde_json::json!({
+                    "task_id": task_id_clone,
+                    "transfer_type": "download",
+                    "bucket": bucket,
+                    "key": key,
+                }));
+            }
+            Err(e) => {
+                let error_msg = e.to_string();
+                let _ = transfer_manager.fail_task(&task_id_clone, error_msg.clone());
+                let _ = app_handle.emit("transfer-failed", serde_json::json!({
+                    "task_id": task_id_clone,
+                    "error": error_msg,
+                }));
+            }
         }
-        Err(e) => {
-            let error_msg = e.to_string();
-            let _ = transfer_manager.fail_task(&task_id, error_msg.clone());
-            Err(e)
-        }
-    }
+    });
+
+    // Return immediately with task_id
+    Ok(ApiResponse::success(TransferResponse { task_id }))
 }
 
 #[command]
