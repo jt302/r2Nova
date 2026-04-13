@@ -150,59 +150,59 @@ src/
 
 ```typescript
 // stores/accountStore.ts
-import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { create } from 'zustand'
+import { persist } from 'zustand/middleware'
 
 interface Account {
-	id: string;
-	name: string;
-	endpoint: string;
-	// Token 不存储在 Store，只存 ID 引用
-	tokenId: string;
+  id: string
+  name: string
+  endpoint: string
+  // Token 不存储在 Store，只存 ID 引用
+  tokenId: string
 }
 
 interface AccountState {
-	accounts: Account[];
-	currentAccountId: string | null;
-	// Actions
-	addAccount: (account: Omit<Account, 'id'>) => Promise<void>;
-	switchAccount: (id: string) => void;
-	removeAccount: (id: string) => Promise<void>;
+  accounts: Account[]
+  currentAccountId: string | null
+  // Actions
+  addAccount: (account: Omit<Account, 'id'>) => Promise<void>
+  switchAccount: (id: string) => void
+  removeAccount: (id: string) => Promise<void>
 }
 
 export const useAccountStore = create<AccountState>()(
-	persist(
-		(set, get) => ({
-			accounts: [],
-			currentAccountId: null,
+  persist(
+    (set, get) => ({
+      accounts: [],
+      currentAccountId: null,
 
-			addAccount: async (account) => {
-				// 调用 Rust 命令保存 Token 到密钥链
-				const tokenId = await invoke('save_account_token', {
-					token: account.token,
-				});
+      addAccount: async account => {
+        // 调用 Rust 命令保存 Token 到密钥链
+        const tokenId = await invoke('save_account_token', {
+          token: account.token,
+        })
 
-				set((state) => ({
-					accounts: [...state.accounts, { ...account, id: tokenId }],
-				}));
-			},
+        set(state => ({
+          accounts: [...state.accounts, { ...account, id: tokenId }],
+        }))
+      },
 
-			// ...其他 actions
-		}),
-		{
-			name: 'r2nova-accounts',
-			// 只持久化非敏感数据
-			partialize: (state) => ({
-				accounts: state.accounts.map((a) => ({
-					...a,
-					// Token 绝不存储
-					token: undefined,
-				})),
-				currentAccountId: state.currentAccountId,
-			}),
-		},
-	),
-);
+      // ...其他 actions
+    }),
+    {
+      name: 'r2nova-accounts',
+      // 只持久化非敏感数据
+      partialize: state => ({
+        accounts: state.accounts.map(a => ({
+          ...a,
+          // Token 绝不存储
+          token: undefined,
+        })),
+        currentAccountId: state.currentAccountId,
+      }),
+    }
+  )
+)
 ```
 
 **TanStack Query 使用场景**:
@@ -253,42 +253,42 @@ pub async fn list_buckets(
 
 ```typescript
 // services/ipcService.ts
-import { invoke } from '@tauri-apps/api/core';
+import { invoke } from '@tauri-apps/api/core'
 
 export const ipc = {
-	// 账号管理
-	async saveAccountToken(token: string): Promise<string> {
-		return invoke('save_account_token', { token });
-	},
+  // 账号管理
+  async saveAccountToken(token: string): Promise<string> {
+    return invoke('save_account_token', { token })
+  },
 
-	async listBuckets(accountId: string) {
-		return invoke('list_buckets', { accountId });
-	},
+  async listBuckets(accountId: string) {
+    return invoke('list_buckets', { accountId })
+  },
 
-	// 文件操作
-	async uploadFile(
-		accountId: string,
-		bucket: string,
-		key: string,
-		localPath: string,
-		options?: { resume?: boolean },
-	) {
-		return invoke('upload_file', {
-			accountId,
-			bucket,
-			key,
-			localPath,
-			options,
-		});
-	},
+  // 文件操作
+  async uploadFile(
+    accountId: string,
+    bucket: string,
+    key: string,
+    localPath: string,
+    options?: { resume?: boolean }
+  ) {
+    return invoke('upload_file', {
+      accountId,
+      bucket,
+      key,
+      localPath,
+      options,
+    })
+  },
 
-	// 实时事件监听
-	onTransferProgress(callback: (progress: TransferProgress) => void) {
-		return listen('transfer:progress', (event) => {
-			callback(event.payload);
-		});
-	},
-};
+  // 实时事件监听
+  onTransferProgress(callback: (progress: TransferProgress) => void) {
+    return listen('transfer:progress', event => {
+      callback(event.payload)
+    })
+  },
+}
 ```
 
 #### 2.2.3 事件通信（实时通知）
