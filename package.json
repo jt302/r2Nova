@@ -1,7 +1,26 @@
 {
   "name": "r2nova",
-  "private": true,
   "version": "0.1.0",
+  "description": "A cross-platform desktop client for Cloudflare R2 object storage, built with Tauri and React",
+  "license": "MIT",
+  "author": "R2Nova Contributors",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/YOUR_GITHUB_USERNAME/r2nova.git"
+  },
+  "bugs": {
+    "url": "https://github.com/YOUR_GITHUB_USERNAME/r2nova/issues"
+  },
+  "homepage": "https://github.com/YOUR_GITHUB_USERNAME/r2nova",
+  "keywords": [
+    "cloudflare",
+    "r2",
+    "object-storage",
+    "s3",
+    "desktop",
+    "tauri",
+    "react"
+  ],
   "type": "module",
   "scripts": {
     "dev": "vite",

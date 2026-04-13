@@ -87,7 +87,7 @@
 
 ```bash
 # 1. 克隆仓库
-git clone https://github.com/yourusername/r2nova.git
+git clone https://github.com/YOUR_GITHUB_USERNAME/r2nova.git
 cd r2nova
 
 # 2. 安装前端依赖
@@ -115,16 +115,16 @@ pnpm tauri dev
 
 | 平台    | 下载                                                                     | 说明                       |
 | ------- | ------------------------------------------------------------------------ | -------------------------- |
-| macOS   | [R2Nova-macOS.dmg](https://github.com/yourusername/r2nova/releases)      | Intel & Apple Silicon 通用 |
-| Windows | [R2Nova-Windows.exe](https://github.com/yourusername/r2nova/releases)    | 64-bit 安装包              |
-| Linux   | [R2Nova-Linux.AppImage](https://github.com/yourusername/r2nova/releases) | 免安装版本                 |
-| Linux   | [R2Nova-Linux.deb](https://github.com/yourusername/r2nova/releases)      | Debian/Ubuntu 包           |
+| macOS   | [R2Nova-macOS.dmg](https://github.com/YOUR_GITHUB_USERNAME/r2nova/releases)      | Intel & Apple Silicon 通用 |
+| Windows | [R2Nova-Windows.exe](https://github.com/YOUR_GITHUB_USERNAME/r2nova/releases)    | 64-bit 安装包              |
+| Linux   | [R2Nova-Linux.AppImage](https://github.com/YOUR_GITHUB_USERNAME/r2nova/releases) | 免安装版本                 |
+| Linux   | [R2Nova-Linux.deb](https://github.com/YOUR_GITHUB_USERNAME/r2nova/releases)      | Debian/Ubuntu 包           |
 
 ### 开发版本
 
 每夜构建版本包含最新功能，但可能不稳定：
 
-- [Nightly Builds](https://github.com/yourusername/r2nova/actions)
+- [Nightly Builds](https://github.com/YOUR_GITHUB_USERNAME/r2nova/actions)
 
 ---
 
@@ -167,7 +167,7 @@ pnpm tauri dev
 
 ```bash
 # 1. Fork 并克隆
-git clone https://github.com/yourusername/r2nova.git
+git clone https://github.com/YOUR_GITHUB_USERNAME/r2nova.git
 
 # 2. 创建分支
 git checkout -b feature/your-feature
@@ -196,15 +196,7 @@ git push origin feature/your-feature
 
 R2Nova 采用 [MIT 许可证](./LICENSE) 开源。
 
-```
-MIT License
-
-Copyright (c) 2024 R2Nova Contributors
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction...
-```
+See [LICENSE](./LICENSE) for the full text.
 
 ---
 
@@ -222,7 +214,7 @@ in the Software without restriction...
 </p>
 
 <p align="center">
-  <a href="https://github.com/yourusername/r2nova">GitHub</a> •
+  <a href="https://github.com/YOUR_GITHUB_USERNAME/r2nova">GitHub</a> •
   <a href="https://r2nova.dev">官网</a> •
   <a href="https://twitter.com/r2nova">Twitter</a>
 </p>
