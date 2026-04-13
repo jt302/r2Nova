@@ -39,7 +39,13 @@
   "bundle": {
     "active": true,
     "targets": ["dmg", "deb", "msi", "appimage"],
-    "icon": ["icons/icon.svg", "icons/icon.icns", "icons/icon.ico"],
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ],
     "category": "DeveloperTool",
     "shortDescription": "Cloudflare R2 Desktop Client",
     "longDescription": "A modern, high-performance desktop client for Cloudflare R2 object storage with support for large file transfers, multiple accounts, and native Chinese localization.",

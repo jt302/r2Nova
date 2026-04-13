@@ -1,3 +1,4 @@
+#[cfg(not(target_os = "windows"))]
 use std::process::Command;
 use tauri::command;
 use tauri::{AppHandle, Manager};
@@ -15,24 +16,23 @@ fn detect_macos_theme() -> Option<bool> {
 
 #[cfg(target_os = "windows")]
 fn detect_windows_theme() -> Option<bool> {
-    use std::ptr;
     use windows::core::w;
-    use windows::Win32::Foundation::ERROR_SUCCESS;
     use windows::Win32::System::Registry::{
-        RegOpenKeyExW, RegQueryValueExW, HKEY_CURRENT_USER, KEY_READ, REG_DWORD,
+        RegOpenKeyExW, RegQueryValueExW, HKEY, HKEY_CURRENT_USER, KEY_READ, REG_DWORD,
+        REG_VALUE_TYPE,
     };
 
     unsafe {
-        let mut key = ptr::null_mut();
+        let mut key = HKEY::default();
         let path = w!("Software\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize");
 
-        if RegOpenKeyExW(HKEY_CURRENT_USER, path, None, KEY_READ, &mut key) != ERROR_SUCCESS.0 {
+        if RegOpenKeyExW(HKEY_CURRENT_USER, path, 0, KEY_READ, &mut key).is_err() {
             return None;
         }
 
         let mut data: u32 = 0;
         let mut data_len: u32 = std::mem::size_of::<u32>() as u32;
-        let mut data_type: u32 = 0;
+        let mut data_type = REG_VALUE_TYPE::default();
         let value = w!("AppsUseLightTheme");
 
         let result = RegQueryValueExW(
@@ -44,7 +44,7 @@ fn detect_windows_theme() -> Option<bool> {
             Some(&mut data_len),
         );
 
-        if result == ERROR_SUCCESS.0 && data_type == REG_DWORD.0 {
+        if result.is_ok() && data_type == REG_DWORD {
             return Some(data == 0);
         }
     }
