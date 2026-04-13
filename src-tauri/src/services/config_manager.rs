@@ -144,8 +144,7 @@ impl ConfigManager {
             "active_account_id": active_account_id,
         });
 
-        let content =
-            serde_json::to_string_pretty(&data).map_err(AppError::Serialization)?;
+        let content = serde_json::to_string_pretty(&data).map_err(AppError::Serialization)?;
 
         fs::write(&self.storage_path, content).map_err(AppError::Io)?;
 
@@ -218,9 +217,7 @@ impl ConfigManager {
         let entry = Entry::new(SERVICE_NAME, "__active_account__")?;
         match id {
             Some(active_id) => {
-                entry
-                    .set_password(active_id)
-                    .map_err(AppError::Keyring)?;
+                entry.set_password(active_id).map_err(AppError::Keyring)?;
                 debug!("Saved active account ID to keyring: {}", active_id);
             }
             None => {
@@ -400,8 +397,7 @@ impl ConfigManager {
             }),
         );
 
-        let content =
-            serde_json::to_string_pretty(&secrets).map_err(AppError::Serialization)?;
+        let content = serde_json::to_string_pretty(&secrets).map_err(AppError::Serialization)?;
 
         fs::write(&accounts_file, content).map_err(AppError::Io)?;
 
@@ -519,8 +515,7 @@ impl ConfigManager {
 
         secrets.insert(id.to_string(), updated_data);
 
-        let content =
-            serde_json::to_string_pretty(&secrets).map_err(AppError::Serialization)?;
+        let content = serde_json::to_string_pretty(&secrets).map_err(AppError::Serialization)?;
         fs::write(&accounts_file, content).map_err(AppError::Io)?;
 
         self.save_accounts_to_file()?;
@@ -599,8 +594,8 @@ impl ConfigManager {
                 let mut secrets: HashMap<String, serde_json::Value> =
                     serde_json::from_str(&content).map_err(AppError::Serialization)?;
                 secrets.remove(id);
-                let content = serde_json::to_string_pretty(&secrets)
-                    .map_err(AppError::Serialization)?;
+                let content =
+                    serde_json::to_string_pretty(&secrets).map_err(AppError::Serialization)?;
                 fs::write(&accounts_file, content).map_err(AppError::Io)?;
             }
         } else {

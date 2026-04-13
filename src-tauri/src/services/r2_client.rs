@@ -48,9 +48,7 @@ impl R2Client {
 
         info!("R2Client created successfully");
 
-        Ok(Self {
-            client,
-        })
+        Ok(Self { client })
     }
 
     pub async fn list_buckets(&self) -> AppResult<Vec<BucketInfo>> {
@@ -256,9 +254,7 @@ impl R2Client {
             match tokio::io::AsyncReadExt::read(&mut stream, &mut buffer).await {
                 Ok(0) => break,
                 Ok(n) => {
-                    file.write_all(&buffer[..n])
-                        .await
-                        .map_err(AppError::Io)?;
+                    file.write_all(&buffer[..n]).await.map_err(AppError::Io)?;
                     downloaded += n as i64;
 
                     let elapsed_secs = start_time.elapsed().as_secs_f64();
@@ -324,9 +320,7 @@ impl R2Client {
             );
 
             let mut buffer = Vec::with_capacity(total_bytes as usize);
-            file.read_to_end(&mut buffer)
-                .await
-                .map_err(AppError::Io)?;
+            file.read_to_end(&mut buffer).await.map_err(AppError::Io)?;
 
             self.client
                 .put_object()
