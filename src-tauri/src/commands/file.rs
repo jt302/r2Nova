@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use tauri::{command, AppHandle, Emitter, State};
 
@@ -167,7 +167,7 @@ pub async fn download_file(
     };
 
     // Create R2 client and get file size
-    let (client, total_bytes) = {
+    let (_client, total_bytes) = {
         let mut r2_manager = state.r2_manager.lock().await;
         let client = r2_manager.get_or_create(&account, &secret_key).await?;
         let path = PathBuf::from(&request.local_path);
@@ -181,22 +181,20 @@ pub async fn download_file(
     // Create transfer task
     let task_id = {
         let mut transfer_manager = state.transfer_manager.lock().await;
-        let task_id = transfer_manager.create_download_task(
+        transfer_manager.create_download_task(
             request.bucket.clone(),
             request.key.clone(),
             request.local_path.clone(),
             total_bytes,
-        );
-        task_id
+        )
     };
 
     let task_id_clone = task_id.clone();
     let bucket = request.bucket.clone();
     let key = request.key.clone();
     let path = PathBuf::from(&request.local_path);
-    let filename = key.split('/').last().unwrap_or(&key).to_string();
+    let filename = key.split('/').next_back().unwrap_or(&key).to_string();
 
-    let config_manager_arc = Arc::clone(&state.config_manager);
     let r2_manager_arc = Arc::clone(&state.r2_manager);
     let transfer_manager_arc = Arc::clone(&state.transfer_manager);
 
@@ -247,6 +245,7 @@ pub async fn download_file(
     Ok(ApiResponse::success(TransferResponse { task_id }))
 }
 
+#[allow(clippy::too_many_arguments)]
 async fn download_in_background(
     r2_manager: Arc<tokio::sync::Mutex<crate::services::R2ClientManager>>,
     transfer_manager: Arc<tokio::sync::Mutex<crate::services::TransferManager>>,
@@ -254,7 +253,7 @@ async fn download_in_background(
     secret_key: &str,
     bucket: &str,
     key: &str,
-    path: &PathBuf,
+    path: &Path,
     total_bytes: i64,
     task_id: &str,
     filename: &str,

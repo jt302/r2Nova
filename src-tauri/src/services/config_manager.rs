@@ -68,7 +68,7 @@ impl ConfigManager {
         let storage_dir = home_dir.join(".r2nova");
 
         if !storage_dir.exists() {
-            fs::create_dir_all(&storage_dir).map_err(|e| AppError::Io(e))?;
+            fs::create_dir_all(&storage_dir).map_err(AppError::Io)?;
         }
 
         Ok(storage_dir.join("accounts.json"))
@@ -82,10 +82,10 @@ impl ConfigManager {
             return Ok(());
         }
 
-        let content = fs::read_to_string(&self.storage_path).map_err(|e| AppError::Io(e))?;
+        let content = fs::read_to_string(&self.storage_path).map_err(AppError::Io)?;
 
         let data: serde_json::Value =
-            serde_json::from_str(&content).map_err(|e| AppError::Serialization(e))?;
+            serde_json::from_str(&content).map_err(AppError::Serialization)?;
 
         if let Some(accounts) = data["accounts"].as_array() {
             // 获取保存的活跃账号ID
@@ -145,9 +145,9 @@ impl ConfigManager {
         });
 
         let content =
-            serde_json::to_string_pretty(&data).map_err(|e| AppError::Serialization(e))?;
+            serde_json::to_string_pretty(&data).map_err(AppError::Serialization)?;
 
-        fs::write(&self.storage_path, content).map_err(|e| AppError::Io(e))?;
+        fs::write(&self.storage_path, content).map_err(AppError::Io)?;
 
         info!("Saved {} accounts to file", self.accounts_cache.len());
         Ok(())
@@ -220,7 +220,7 @@ impl ConfigManager {
             Some(active_id) => {
                 entry
                     .set_password(active_id)
-                    .map_err(|e| AppError::Keyring(e))?;
+                    .map_err(AppError::Keyring)?;
                 debug!("Saved active account ID to keyring: {}", active_id);
             }
             None => {
@@ -384,8 +384,8 @@ impl ConfigManager {
         let accounts_file = self.storage_path.with_extension("secrets.json");
 
         let mut secrets: HashMap<String, serde_json::Value> = if accounts_file.exists() {
-            let content = fs::read_to_string(&accounts_file).map_err(|e| AppError::Io(e))?;
-            serde_json::from_str(&content).map_err(|e| AppError::Serialization(e))?
+            let content = fs::read_to_string(&accounts_file).map_err(AppError::Io)?;
+            serde_json::from_str(&content).map_err(AppError::Serialization)?
         } else {
             HashMap::new()
         };
@@ -401,9 +401,9 @@ impl ConfigManager {
         );
 
         let content =
-            serde_json::to_string_pretty(&secrets).map_err(|e| AppError::Serialization(e))?;
+            serde_json::to_string_pretty(&secrets).map_err(AppError::Serialization)?;
 
-        fs::write(&accounts_file, content).map_err(|e| AppError::Io(e))?;
+        fs::write(&accounts_file, content).map_err(AppError::Io)?;
 
         self.save_accounts_to_file()?;
 
@@ -480,7 +480,7 @@ impl ConfigManager {
 
         entry
             .set_password(&secret_data.to_string())
-            .map_err(|e| AppError::Keyring(e))?;
+            .map_err(AppError::Keyring)?;
 
         info!("Successfully updated account in keyring");
         Ok(())
@@ -497,8 +497,8 @@ impl ConfigManager {
         let accounts_file = self.storage_path.with_extension("secrets.json");
 
         let mut secrets: HashMap<String, serde_json::Value> = if accounts_file.exists() {
-            let content = fs::read_to_string(&accounts_file).map_err(|e| AppError::Io(e))?;
-            serde_json::from_str(&content).map_err(|e| AppError::Serialization(e))?
+            let content = fs::read_to_string(&accounts_file).map_err(AppError::Io)?;
+            serde_json::from_str(&content).map_err(AppError::Serialization)?
         } else {
             return Err(AppError::AccountNotFound(id.to_string()));
         };
@@ -520,8 +520,8 @@ impl ConfigManager {
         secrets.insert(id.to_string(), updated_data);
 
         let content =
-            serde_json::to_string_pretty(&secrets).map_err(|e| AppError::Serialization(e))?;
-        fs::write(&accounts_file, content).map_err(|e| AppError::Io(e))?;
+            serde_json::to_string_pretty(&secrets).map_err(AppError::Serialization)?;
+        fs::write(&accounts_file, content).map_err(AppError::Io)?;
 
         self.save_accounts_to_file()?;
 
@@ -534,9 +534,9 @@ impl ConfigManager {
 
         if self.use_file_storage {
             let accounts_file = self.storage_path.with_extension("secrets.json");
-            let content = fs::read_to_string(&accounts_file).map_err(|e| AppError::Io(e))?;
+            let content = fs::read_to_string(&accounts_file).map_err(AppError::Io)?;
             let secrets: HashMap<String, serde_json::Value> =
-                serde_json::from_str(&content).map_err(|e| AppError::Serialization(e))?;
+                serde_json::from_str(&content).map_err(AppError::Serialization)?;
 
             match secrets.get(account_id) {
                 Some(data) => match data["secret_access_key"].as_str() {
@@ -595,13 +595,13 @@ impl ConfigManager {
         if self.use_file_storage {
             let accounts_file = self.storage_path.with_extension("secrets.json");
             if accounts_file.exists() {
-                let content = fs::read_to_string(&accounts_file).map_err(|e| AppError::Io(e))?;
+                let content = fs::read_to_string(&accounts_file).map_err(AppError::Io)?;
                 let mut secrets: HashMap<String, serde_json::Value> =
-                    serde_json::from_str(&content).map_err(|e| AppError::Serialization(e))?;
+                    serde_json::from_str(&content).map_err(AppError::Serialization)?;
                 secrets.remove(id);
                 let content = serde_json::to_string_pretty(&secrets)
-                    .map_err(|e| AppError::Serialization(e))?;
-                fs::write(&accounts_file, content).map_err(|e| AppError::Io(e))?;
+                    .map_err(AppError::Serialization)?;
+                fs::write(&accounts_file, content).map_err(AppError::Io)?;
             }
         } else {
             let entry = Entry::new(SERVICE_NAME, id)?;

@@ -1,17 +1,15 @@
 use aws_config::BehaviorVersion;
 use aws_sdk_s3::{Client, Config};
-use futures::StreamExt;
 use std::collections::HashMap;
 use std::path::Path;
 use tokio::io::AsyncWriteExt;
-use tracing::{debug, error, info};
+use tracing::{error, info};
 
 use crate::errors::{AppError, AppResult};
 use crate::models::{Account, BucketInfo, ObjectInfo};
 
 pub struct R2Client {
     client: Client,
-    account_id: String,
 }
 
 impl R2Client {
@@ -52,7 +50,6 @@ impl R2Client {
 
         Ok(Self {
             client,
-            account_id: account.id.clone(),
         })
     }
 
@@ -94,8 +91,7 @@ impl R2Client {
                 name: b.name().unwrap_or("").to_string(),
                 creation_date: b
                     .creation_date()
-                    .map(|d| chrono::DateTime::from_timestamp(d.secs(), d.subsec_nanos()))
-                    .flatten(),
+                    .and_then(|d| chrono::DateTime::from_timestamp(d.secs(), d.subsec_nanos())),
                 object_count: None,
                 total_size: None,
             })
@@ -179,8 +175,7 @@ impl R2Client {
                 size: obj.size().unwrap_or(0),
                 last_modified: obj
                     .last_modified()
-                    .map(|d| chrono::DateTime::from_timestamp(d.secs(), d.subsec_nanos()))
-                    .flatten(),
+                    .and_then(|d| chrono::DateTime::from_timestamp(d.secs(), d.subsec_nanos())),
                 etag: obj.e_tag().map(|e| e.to_string()),
                 is_directory: obj.key().map(|k| k.ends_with('/')).unwrap_or(false),
             })
@@ -233,7 +228,7 @@ impl R2Client {
         bucket: &str,
         key: &str,
         local_path: &Path,
-        total_bytes: i64,
+        _total_bytes: i64,
         mut progress_callback: F,
     ) -> AppResult<()>
     where
@@ -251,7 +246,7 @@ impl R2Client {
         let mut stream = resp.body.into_async_read();
         let mut file = tokio::fs::File::create(local_path)
             .await
-            .map_err(|e| AppError::Io(e))?;
+            .map_err(AppError::Io)?;
 
         let mut downloaded: i64 = 0;
         let start_time = std::time::Instant::now();
@@ -263,7 +258,7 @@ impl R2Client {
                 Ok(n) => {
                     file.write_all(&buffer[..n])
                         .await
-                        .map_err(|e| AppError::Io(e))?;
+                        .map_err(AppError::Io)?;
                     downloaded += n as i64;
 
                     let elapsed_secs = start_time.elapsed().as_secs_f64();
@@ -279,7 +274,7 @@ impl R2Client {
             }
         }
 
-        file.flush().await.map_err(|e| AppError::Io(e))?;
+        file.flush().await.map_err(AppError::Io)?;
         Ok(())
     }
 
@@ -320,7 +315,7 @@ impl R2Client {
 
         let mut file = tokio::fs::File::open(local_path)
             .await
-            .map_err(|e| AppError::Io(e))?;
+            .map_err(AppError::Io)?;
 
         if total_bytes < MIN_MULTIPART_SIZE {
             info!(
@@ -331,7 +326,7 @@ impl R2Client {
             let mut buffer = Vec::with_capacity(total_bytes as usize);
             file.read_to_end(&mut buffer)
                 .await
-                .map_err(|e| AppError::Io(e))?;
+                .map_err(AppError::Io)?;
 
             self.client
                 .put_object()
@@ -805,8 +800,7 @@ impl R2Client {
                     size: obj.size().unwrap_or(0),
                     last_modified: obj
                         .last_modified()
-                        .map(|d| chrono::DateTime::from_timestamp(d.secs(), d.subsec_nanos()))
-                        .flatten(),
+                        .and_then(|d| chrono::DateTime::from_timestamp(d.secs(), d.subsec_nanos())),
                     etag: obj.e_tag().map(|e| e.to_string()),
                     is_directory: obj.key().map(|k| k.ends_with('/')).unwrap_or(false),
                 });
@@ -871,8 +865,7 @@ impl R2Client {
                 upload_id: upload.upload_id().unwrap_or("").to_string(),
                 initiated: upload
                     .initiated()
-                    .map(|d| chrono::DateTime::from_timestamp(d.secs(), d.subsec_nanos()))
-                    .flatten(),
+                    .and_then(|d| chrono::DateTime::from_timestamp(d.secs(), d.subsec_nanos())),
                 storage_class: upload.storage_class().map(|s| s.as_str().to_string()),
             })
             .collect();

@@ -5,6 +5,7 @@ use crate::commands::ApiResponse;
 use crate::errors::AppError;
 use crate::models::AppInfo;
 
+#[allow(dead_code)]
 #[derive(Debug, Serialize)]
 pub struct SystemInfoResponse {
     pub app: AppInfo,

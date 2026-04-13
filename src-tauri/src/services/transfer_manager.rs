@@ -46,7 +46,7 @@ impl TransferManager {
     }
 
     fn emit_progress(&self, task: &TransferTask) {
-        let filename = task.key.split('/').last().unwrap_or(&task.key).to_string();
+        let filename = task.key.split('/').next_back().unwrap_or(&task.key).to_string();
         let payload = TransferProgressPayload {
             task_id: task.id.clone(),
             transfer_type: match task.transfer_type {
