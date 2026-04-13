@@ -33,7 +33,7 @@ This project follows the [Contributor Covenant](./CODE_OF_CONDUCT.md). By partic
 
 ```bash
 # 1. Fork and clone
-git clone https://github.com/YOUR_GITHUB_USERNAME/r2nova.git
+git clone https://github.com/jt302/r2Nova.git
 cd r2nova
 
 # 2. Install frontend dependencies
@@ -65,7 +65,7 @@ r2nova/
 
 ## Workflow
 
-1. Check existing [issues](https://github.com/YOUR_GITHUB_USERNAME/r2nova/issues) before starting work
+1. Check existing [issues](https://github.com/jt302/r2Nova/issues) before starting work
 2. For significant features, open an issue to discuss the approach first
 3. Fork the repo and create a branch from `main`
 
@@ -167,4 +167,4 @@ There is currently no end-to-end test suite. Manual testing against a real Cloud
 - CI must pass before review
 - A maintainer will review within a few business days
 
-For questions, open a [Discussion](https://github.com/YOUR_GITHUB_USERNAME/r2nova/discussions) rather than an issue.
+For questions, open a [Discussion](https://github.com/jt302/r2Nova/discussions) rather than an issue.

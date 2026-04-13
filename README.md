@@ -87,7 +87,7 @@
 
 ```bash
 # 1. 克隆仓库
-git clone https://github.com/YOUR_GITHUB_USERNAME/r2nova.git
+git clone https://github.com/jt302/r2Nova.git
 cd r2nova
 
 # 2. 安装前端依赖
@@ -115,16 +115,16 @@ pnpm tauri dev
 
 | 平台    | 下载                                                                     | 说明                       |
 | ------- | ------------------------------------------------------------------------ | -------------------------- |
-| macOS   | [R2Nova-macOS.dmg](https://github.com/YOUR_GITHUB_USERNAME/r2nova/releases)      | Intel & Apple Silicon 通用 |
-| Windows | [R2Nova-Windows.exe](https://github.com/YOUR_GITHUB_USERNAME/r2nova/releases)    | 64-bit 安装包              |
-| Linux   | [R2Nova-Linux.AppImage](https://github.com/YOUR_GITHUB_USERNAME/r2nova/releases) | 免安装版本                 |
-| Linux   | [R2Nova-Linux.deb](https://github.com/YOUR_GITHUB_USERNAME/r2nova/releases)      | Debian/Ubuntu 包           |
+| macOS   | [R2Nova-macOS.dmg](https://github.com/jt302/r2Nova/releases)      | Intel & Apple Silicon 通用 |
+| Windows | [R2Nova-Windows.exe](https://github.com/jt302/r2Nova/releases)    | 64-bit 安装包              |
+| Linux   | [R2Nova-Linux.AppImage](https://github.com/jt302/r2Nova/releases) | 免安装版本                 |
+| Linux   | [R2Nova-Linux.deb](https://github.com/jt302/r2Nova/releases)      | Debian/Ubuntu 包           |
 
 ### 开发版本
 
 每夜构建版本包含最新功能，但可能不稳定：
 
-- [Nightly Builds](https://github.com/YOUR_GITHUB_USERNAME/r2nova/actions)
+- [Nightly Builds](https://github.com/jt302/r2Nova/actions)
 
 ---
 
@@ -167,7 +167,7 @@ pnpm tauri dev
 
 ```bash
 # 1. Fork 并克隆
-git clone https://github.com/YOUR_GITHUB_USERNAME/r2nova.git
+git clone https://github.com/jt302/r2Nova.git
 
 # 2. 创建分支
 git checkout -b feature/your-feature
@@ -214,7 +214,7 @@ See [LICENSE](./LICENSE) for the full text.
 </p>
 
 <p align="center">
-  <a href="https://github.com/YOUR_GITHUB_USERNAME/r2nova">GitHub</a> •
+  <a href="https://github.com/jt302/r2Nova">GitHub</a> •
   <a href="https://r2nova.dev">官网</a> •
   <a href="https://twitter.com/r2nova">Twitter</a>
 </p>

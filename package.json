@@ -6,12 +6,12 @@
   "author": "R2Nova Contributors",
   "repository": {
     "type": "git",
-    "url": "https://github.com/YOUR_GITHUB_USERNAME/r2nova.git"
+    "url": "https://github.com/jt302/r2Nova.git"
   },
   "bugs": {
-    "url": "https://github.com/YOUR_GITHUB_USERNAME/r2nova/issues"
+    "url": "https://github.com/jt302/r2Nova/issues"
   },
-  "homepage": "https://github.com/YOUR_GITHUB_USERNAME/r2nova",
+  "homepage": "https://github.com/jt302/r2Nova",
   "keywords": [
     "cloudflare",
     "r2",
