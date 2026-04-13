@@ -65,6 +65,6 @@ jobs:
           releaseName: R2Nova ${{ github.ref_name }}
           releaseBody: |
             See [CHANGELOG.md](https://github.com/jt302/r2Nova/blob/main/CHANGELOG.md) for details.
-          releaseDraft: true
+          releaseDraft: false
           prerelease: ${{ contains(github.ref_name, 'alpha') || contains(github.ref_name, 'beta') || contains(github.ref_name, 'rc') }}
           args: ${{ matrix.args }}
