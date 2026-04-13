@@ -404,7 +404,10 @@ export function BucketBrowser({ account, selectedBucket, onBucketSelect }: Bucke
   }
 
   const buckets = bucketCache?.buckets || []
-  const objects = getCachedObjects(account.id, selectedBucket || '', currentPrefix) || []
+  const objects = useMemo(
+    () => getCachedObjects(account.id, selectedBucket ?? '', currentPrefix) ?? [],
+    [getCachedObjects, account.id, selectedBucket, currentPrefix]
+  )
   const error = localError || storeError
   const isLoading = isLoadingBuckets || isLoadingObjects
 
@@ -736,7 +739,7 @@ export function BucketBrowser({ account, selectedBucket, onBucketSelect }: Bucke
                       {t('dialog.emptyFolder')}
                     </div>
                   ) : (
-                    folderContentsToDelete.map((obj, _index) => (
+                    folderContentsToDelete.map(obj => (
                       <div
                         key={obj.key}
                         className="flex items-center gap-2 py-1 text-sm border-b last:border-0"

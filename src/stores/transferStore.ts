@@ -47,7 +47,7 @@ interface TransferStore {
   removeTask: (taskId: string) => void
   clearCompleted: () => void
   // 获取特定 bucket 和 prefix 的上传任务（用于文件列表显示）
-  getUploadTasksForPrefix: (bucket: string, prefix: string) => TransferTask[]
+  getUploadTasksForPrefix: () => TransferTask[]
   // 文件列表刷新回调
   onUploadCompleted: ((bucket: string, key: string) => void) | null
   setOnUploadCompleted: (callback: ((bucket: string, key: string) => void) | null) => void
@@ -96,7 +96,7 @@ export const useTransferStore = create<TransferStore>(set => ({
       tasks: state.tasks.filter(task => task.status !== 'completed'),
     })),
 
-  getUploadTasksForPrefix: (_bucket: string, _prefix: string): TransferTask[] => {
+  getUploadTasksForPrefix: (): TransferTask[] => {
     return []
   },
 
