@@ -15,5 +15,18 @@ module.exports = {
       "warn",
       { allowConstantExport: true },
     ],
+    "@typescript-eslint/no-unused-vars": [
+      "error",
+      { argsIgnorePattern: "^_", varsIgnorePattern: "^_" },
+    ],
   },
+  overrides: [
+    {
+      // shadcn/ui generated files export variants alongside components
+      files: ["src/components/ui/**/*.{ts,tsx}"],
+      rules: {
+        "react-refresh/only-export-components": "off",
+      },
+    },
+  ],
 };
