@@ -336,19 +336,10 @@ export function BucketBrowser({ account, selectedBucket, onBucketSelect }: Bucke
     setUploading(true)
     setLocalError(null)
     try {
-      const taskId = await fileService.uploadFile(selectedBucket, key, filePath)
-      // 将任务加入 store，文件立即以"上传中"状态显示在列表里，无需刷新整个列表
-      addTask({
-        id: taskId,
-        type: 'upload',
-        status: 'pending',
-        filename: fileName,
-        bucket: selectedBucket,
-        key,
-        bytesTotal: 0,
-        bytesTransferred: 0,
-        speedMbps: 0,
-      })
+      // 只启动后台上传任务，不手动 addTask。
+      // Rust 在 create_upload_task 里会立刻 emit 一条 transfer-progress 事件（含正确 bytes_total），
+      // 事件监听器会用该事件把任务加入 store，避免重复添加或 bytesTotal=0 的问题。
+      await fileService.uploadFile(selectedBucket, key, filePath)
     } catch (err) {
       setLocalError(err instanceof Error ? err.message : t('bucket.uploadError'))
     } finally {
@@ -425,7 +416,8 @@ export function BucketBrowser({ account, selectedBucket, onBucketSelect }: Bucke
         task.type === 'upload' &&
         task.bucket === selectedBucket &&
         task.key.startsWith(currentPrefix) &&
-        (task.status === 'pending' || task.status === 'in_progress')
+        task.status !== 'completed' &&
+        task.status !== 'failed'
     )
     return filtered
   }, [tasks, selectedBucket, currentPrefix])

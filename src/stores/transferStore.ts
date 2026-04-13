@@ -41,7 +41,7 @@ interface TransferFailedPayload {
 interface TransferStore {
   tasks: TransferTask[]
   addTask: (task: TransferTask) => void
-  updateProgress: (taskId: string, bytesTransferred: number, speedMbps: number) => void
+  updateProgress: (taskId: string, bytesTransferred: number, bytesTotal: number, speedMbps: number) => void
   completeTask: (taskId: string) => void
   failTask: (taskId: string, error: string) => void
   removeTask: (taskId: string) => void
@@ -62,10 +62,13 @@ export const useTransferStore = create<TransferStore>(set => ({
       tasks: [...state.tasks, task],
     })),
 
-  updateProgress: (taskId, bytesTransferred, speedMbps) =>
+  updateProgress: (taskId, bytesTransferred, bytesTotal, speedMbps) =>
     set(state => ({
       tasks: state.tasks.map(task =>
-        task.id === taskId ? { ...task, bytesTransferred, speedMbps, status: 'in_progress' } : task
+        // 只更新进行中的任务，防止迟到的 progress 事件将 completed/failed 状态覆盖
+        task.id === taskId && task.status !== 'completed' && task.status !== 'failed'
+          ? { ...task, bytesTransferred, bytesTotal, speedMbps, status: 'in_progress' }
+          : task
       ),
     })),
 
@@ -130,7 +133,7 @@ export function initTransferListeners() {
         speedMbps: payload.speed_mbps,
       })
     } else {
-      store.updateProgress(payload.task_id, payload.bytes_transferred, payload.speed_mbps)
+      store.updateProgress(payload.task_id, payload.bytes_transferred, payload.bytes_total, payload.speed_mbps)
     }
   })
 
