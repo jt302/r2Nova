@@ -82,7 +82,7 @@ export function Header({ currentAccount, onNavigate }: HeaderProps) {
           </Button>
           <Avatar className="h-8 w-8 ml-2">
             <AvatarFallback className="bg-gradient-to-br from-primary to-primary/80 text-primary-foreground font-bold text-sm">
-              {currentAccount?.name?.charAt(0).toUpperCase() || 'R'}
+              {currentAccount?.name?.charAt(0).toUpperCase() || t('common.defaultAvatar')}
             </AvatarFallback>
           </Avatar>
         </div>

@@ -199,7 +199,7 @@ export function TransferCenter() {
                     <div className="flex flex-col">
                       <span className="font-medium truncate">{task.filename}</span>
                       <span className="text-xs text-muted-foreground uppercase tracking-wider">
-                        Bucket: {task.bucket}
+                        {t('common.bucketLabel')} {task.bucket}
                       </span>
                     </div>
                   </TableCell>

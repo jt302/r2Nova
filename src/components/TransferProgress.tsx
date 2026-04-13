@@ -53,7 +53,7 @@ export function TransferProgress() {
           <span>
             {formatBytes(latestTask.bytesTransferred)} / {formatBytes(latestTask.bytesTotal)}
           </span>
-          <span>{latestTask.speedMbps.toFixed(1)} MB/s</span>
+          <span>{latestTask.speedMbps.toFixed(1)} {t('common.speedUnit')}</span>
         </div>
 
         {activeTasks.length > 1 && (

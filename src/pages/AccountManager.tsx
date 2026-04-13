@@ -249,7 +249,7 @@ export function AccountManager({ onAccountSelect }: AccountManagerProps) {
               <PlusSquare className="w-6 h-6 text-primary" />
               <DialogTitle>{t('account.connectNew')}</DialogTitle>
             </div>
-            <DialogDescription>Step 1: Configuration</DialogDescription>
+            <DialogDescription>{t('dialog.step1Config')}</DialogDescription>
           </DialogHeader>
 
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -380,7 +380,7 @@ export function AccountManager({ onAccountSelect }: AccountManagerProps) {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>{t('account.confirmDelete')}</DialogTitle>
-            <DialogDescription>This action cannot be undone.</DialogDescription>
+            <DialogDescription>{t('dialog.cannotUndo')}</DialogDescription>
           </DialogHeader>
           <DialogFooter className="gap-2">
             <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)}>

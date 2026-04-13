@@ -135,15 +135,23 @@ export function BucketBrowser({ account, selectedBucket, onBucketSelect }: Bucke
   useEffect(() => {
     useTransferStore.getState().setOnUploadCompleted((bucket: string, key: string) => {
       if (bucket === selectedBucket && key.startsWith(currentPrefix)) {
-        loadedRef.current.objects = false
-        loadObjects(account.id, bucket, currentPrefix)
+        // 上传完成后只把新文件追加进缓存，避免整个列表刷新
+        const task = useTransferStore.getState().tasks.find(
+          t => t.key === key && t.bucket === bucket
+        )
+        addObjectToCache(account.id, bucket, currentPrefix, {
+          key,
+          size: task?.bytesTotal || 0,
+          last_modified: new Date().toISOString(),
+          is_directory: false,
+        })
       }
     })
 
     return () => {
       useTransferStore.getState().setOnUploadCompleted(null)
     }
-  }, [selectedBucket, currentPrefix, account.id, loadObjects])
+  }, [selectedBucket, currentPrefix, account.id, addObjectToCache])
 
   useEffect(() => {
     const unlisten = listen<{ bucket: string; key: string; deleted: number; total: number }>(
@@ -286,7 +294,7 @@ export function BucketBrowser({ account, selectedBucket, onBucketSelect }: Bucke
       setTotalContentsCount(result.total_count)
       setIsDeleteFolderDialogOpen(true)
     } catch (err) {
-      setLocalError(err instanceof Error ? err.message : 'Failed to load folder contents')
+      setLocalError(err instanceof Error ? err.message : t('error.loadFolderFailed'))
     } finally {
       setIsLoadingFolderContents(false)
     }
@@ -322,15 +330,25 @@ export function BucketBrowser({ account, selectedBucket, onBucketSelect }: Bucke
     const filePath = await dialogService.selectFile()
     if (!filePath) return
 
-    const fileName = filePath.split('/').pop() || 'unnamed'
+    const fileName = filePath.split('/').pop() || t('common.unnamed')
     const key = currentPrefix + fileName
 
     setUploading(true)
     setLocalError(null)
     try {
-      await fileService.uploadFile(selectedBucket, key, filePath)
-      loadedRef.current.objects = false
-      await loadObjects(account.id, selectedBucket, currentPrefix, true)
+      const taskId = await fileService.uploadFile(selectedBucket, key, filePath)
+      // 将任务加入 store，文件立即以"上传中"状态显示在列表里，无需刷新整个列表
+      addTask({
+        id: taskId,
+        type: 'upload',
+        status: 'pending',
+        filename: fileName,
+        bucket: selectedBucket,
+        key,
+        bytesTotal: 0,
+        bytesTransferred: 0,
+        speedMbps: 0,
+      })
     } catch (err) {
       setLocalError(err instanceof Error ? err.message : t('bucket.uploadError'))
     } finally {
@@ -617,7 +635,11 @@ export function BucketBrowser({ account, selectedBucket, onBucketSelect }: Bucke
                             }}
                             disabled={downloading === obj.key}
                           >
-                            {downloading === obj.key ? '...' : <Download size={14} />}
+                            {downloading === obj.key ? (
+                              <span className="text-xs">{t('common.loadingDots')}</span>
+                            ) : (
+                              <Download size={14} />
+                            )}
                           </Button>
                           <Button
                             variant="ghost"

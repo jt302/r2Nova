@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { Account } from '../types'
 import { accountService } from '../services/r2Service'
+import { logger } from '../services/loggerService'
 
 interface AccountState {
   accounts: Account[]
@@ -43,7 +44,7 @@ export const useAccountStore = create<AccountState>()((set, get) => ({
         isLoading: false,
       })
     } catch (error) {
-      console.error('Failed to load accounts:', error)
+      logger.error('Failed to load accounts', { error: String(error) })
       set({
         error: error instanceof Error ? error.message : 'Failed to load accounts',
         isLoading: false,
@@ -55,13 +56,13 @@ export const useAccountStore = create<AccountState>()((set, get) => ({
     set({ isLoading: true, error: null })
     try {
       const account = await accountService.saveAccount(input)
-      console.log('Account saved successfully:', account)
+      logger.info('Account saved successfully', { accountId: account.id })
       set(state => ({
         accounts: [...state.accounts, account],
         isLoading: false,
       }))
     } catch (error) {
-      console.error('Failed to add account:', error)
+      logger.error('Failed to add account', { error: String(error) })
       set({
         error: error instanceof Error ? error.message : 'Failed to add account',
         isLoading: false,
@@ -77,7 +78,7 @@ export const useAccountStore = create<AccountState>()((set, get) => ({
       const account = get().accounts.find(a => a.id === id) || null
       set({ currentAccount: account, isLoading: false })
     } catch (error) {
-      console.error('Failed to set current account:', error)
+      logger.error('Failed to set current account', { error: String(error) })
       set({
         error: error instanceof Error ? error.message : 'Failed to set current account',
         isLoading: false,
@@ -96,7 +97,7 @@ export const useAccountStore = create<AccountState>()((set, get) => ({
         isLoading: false,
       }))
     } catch (error) {
-      console.error('Failed to delete account:', error)
+      logger.error('Failed to delete account', { error: String(error) })
       set({
         error: error instanceof Error ? error.message : 'Failed to delete account',
         isLoading: false,
@@ -109,13 +110,13 @@ export const useAccountStore = create<AccountState>()((set, get) => ({
     set({ isLoading: true, error: null })
     try {
       const account = await accountService.updateAccount(id, input)
-      console.log('Account updated successfully:', account)
+      logger.info('Account updated successfully', { accountId: account.id })
       set(state => ({
         accounts: state.accounts.map(a => (a.id === id ? account : a)),
         isLoading: false,
       }))
     } catch (error) {
-      console.error('Failed to update account:', error)
+      logger.error('Failed to update account', { error: String(error) })
       set({
         error: error instanceof Error ? error.message : 'Failed to update account',
         isLoading: false,

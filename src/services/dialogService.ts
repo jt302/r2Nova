@@ -1,4 +1,5 @@
 import { open, save } from '@tauri-apps/plugin-dialog'
+import { logger } from './loggerService'
 
 export const dialogService = {
   async selectFile(): Promise<string | null> {
@@ -37,7 +38,7 @@ export const dialogService = {
       })
       return path
     } catch (error) {
-      console.error('Save dialog error:', error)
+      logger.error('Save dialog error', { error: String(error) })
       return null
     }
   },

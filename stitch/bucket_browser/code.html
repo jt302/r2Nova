@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="zh-Hans"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>R2Nova Kinetic Vault - Bucket Browser</title>
+<script type="text/javascript" nonce="a97151644bdb47b6bd096ee5069" src="//local.adguard.org?ts=1775535175384&amp;type=content-script&amp;dmn=contribution.usercontent.google.com&amp;url=https%3A%2F%2Fcontribution.usercontent.google.com%2Fdownload%3Fc%3DCgthaWRhX2NvZGVmeBJ7Eh1hcHBfY29tcGFuaW9uX2dlbmVyYXRlZF9maWxlcxpaCiVodG1sX2Y0OTMzYmUyMjFiMjQzNzZiOTQyMjNkZTlmYzBkOThiEgsSBxD3qIXN8ggYAZIBIwoKcHJvamVjdF9pZBIVQhM1Njg3MzUxOTgxMjUxMTU0NjA4%26filename%3D%26opi%3D89354086&amp;app=com.google.Chrome&amp;css=3&amp;js=1&amp;rel=1&amp;rji=1&amp;sbe=1"></script><script type="text/javascript" nonce="a97151644bdb47b6bd096ee5069" src="//local.adguard.org?ts=1775535175384&amp;name=AdGuard%20Extra&amp;type=user-script"></script><script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700;800&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "on-secondary-fixed-variant": "#3a485b",
+                    "primary-fixed": "#ffdcc7",
+                    "inverse-on-surface": "#283044",
+                    "primary": "#ffb787",
+                    "on-background": "#dae2fd",
+                    "on-error": "#690005",
+                    "secondary-container": "#3c4a5e",
+                    "primary-container": "#f38020",
+                    "secondary-fixed": "#d5e3fc",
+                    "tertiary-container": "#1ba9ed",
+                    "surface-container-highest": "#2d3449",
+                    "on-error-container": "#ffdad6",
+                    "tertiary": "#89ceff",
+                    "surface-container-low": "#131b2e",
+                    "outline-variant": "#564336",
+                    "background": "#0b1326",
+                    "surface": "#0b1326",
+                    "on-tertiary-container": "#003a56",
+                    "surface-variant": "#2d3449",
+                    "on-secondary-container": "#abb9d1",
+                    "primary-fixed-dim": "#ffb787",
+                    "on-surface": "#dae2fd",
+                    "on-secondary-fixed": "#0d1c2e",
+                    "on-tertiary": "#00344d",
+                    "secondary-fixed-dim": "#b9c7df",
+                    "on-primary": "#502400",
+                    "on-primary-container": "#592900",
+                    "surface-container-lowest": "#060e20",
+                    "on-tertiary-fixed-variant": "#004c6e",
+                    "on-secondary": "#233144",
+                    "secondary": "#b9c7df",
+                    "on-surface-variant": "#ddc1b1",
+                    "surface-bright": "#31394d",
+                    "inverse-primary": "#964900",
+                    "error-container": "#93000a",
+                    "inverse-surface": "#dae2fd",
+                    "outline": "#a58c7d",
+                    "on-primary-fixed": "#311300",
+                    "tertiary-fixed-dim": "#89ceff",
+                    "tertiary-fixed": "#c9e6ff",
+                    "surface-container-high": "#222a3d",
+                    "error": "#ffb4ab",
+                    "on-primary-fixed-variant": "#723600",
+                    "surface-dim": "#0b1326",
+                    "surface-tint": "#ffb787",
+                    "on-tertiary-fixed": "#001e2f",
+                    "surface-container": "#171f33"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.125rem",
+                    "lg": "0.25rem",
+                    "xl": "0.5rem",
+                    "full": "0.75rem"
+            },
+            "fontFamily": {
+                    "headline": ["Manrope"],
+                    "body": ["Inter"],
+                    "label": ["Inter"]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            vertical-align: middle;
+        }
+        .glass {
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+        }
+    </style>
+</head>
+<body class="bg-background text-on-surface font-body selection:bg-primary/30 selection:text-primary min-h-screen flex overflow-hidden">
+<!-- Predicted Component: SideNavBar -->
+<aside class="h-full w-64 flex-shrink-0 flex flex-col h-screen sticky top-0 bg-[#171f33] dark:bg-slate-900 relative after:absolute after:right-0 after:top-0 after:h-full after:w-[1px] after:bg-white/5 shadow-xl">
+<!-- Brand Header -->
+<div class="p-6 flex items-center gap-3">
+<div class="w-8 h-8 rounded bg-gradient-to-br from-primary-container to-primary flex items-center justify-center">
+<span class="material-symbols-outlined text-on-primary-container text-lg" style="font-variation-settings: 'FILL' 1;">database</span>
+</div>
+<div>
+<h1 class="text-xl font-black text-[#f38020] tracking-tighter font-headline">R2Nova</h1>
+<p class="text-[10px] uppercase tracking-widest text-slate-500 font-bold">Kinetic Vault</p>
+</div>
+</div>
+<nav class="flex-1 px-3 space-y-1">
+<!-- Active Navigation Logic: Buckets is active -->
+<a class="flex items-center gap-3 px-3 py-2.5 font-['Manrope'] font-medium text-sm rounded-lg relative bg-white/5 text-[#f38020] before:absolute before:left-0 before:top-2 before:bottom-2 before:w-1 before:bg-[#f38020] before:rounded-r-full active:scale-95 transition-all duration-200" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">database</span>
+<span>Buckets</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 font-['Manrope'] font-medium text-sm rounded-lg text-slate-400 hover:text-slate-200 hover:bg-white/5 transition-all duration-200 active:scale-95" href="#">
+<span class="material-symbols-outlined">account_circle</span>
+<span>Accounts</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 font-['Manrope'] font-medium text-sm rounded-lg text-slate-400 hover:text-slate-200 hover:bg-white/5 transition-all duration-200 active:scale-95" href="#">
+<span class="material-symbols-outlined">swap_vert</span>
+<span>Transfers</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 font-['Manrope'] font-medium text-sm rounded-lg text-slate-400 hover:text-slate-200 hover:bg-white/5 transition-all duration-200 active:scale-95" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span>Settings</span>
+</a>
+<div class="pt-8 pb-4 px-3">
+<p class="text-[10px] uppercase tracking-[0.2em] text-slate-600 font-bold mb-4">Your Buckets</p>
+<div class="space-y-1">
+<div class="flex items-center justify-between group p-2 rounded-lg hover:bg-white/5 cursor-pointer">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-tertiary text-lg">folder</span>
+<span class="text-xs text-on-surface truncate w-32">production-assets</span>
+</div>
+</div>
+<div class="flex items-center justify-between group p-2 rounded-lg bg-white/5 cursor-pointer">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-lg">folder_open</span>
+<span class="text-xs text-primary font-semibold truncate w-32">documents</span>
+</div>
+</div>
+<div class="flex items-center justify-between group p-2 rounded-lg hover:bg-white/5 cursor-pointer">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-tertiary text-lg">folder</span>
+<span class="text-xs text-on-surface truncate w-32">backup-vault</span>
+</div>
+</div>
+</div>
+</div>
+</nav>
+<div class="p-4 border-t border-white/5">
+<button class="w-full bg-gradient-to-br from-primary-container to-primary text-on-primary-container font-headline font-bold py-2.5 rounded-lg text-sm flex items-center justify-center gap-2 shadow-lg shadow-primary-container/10 active:scale-[0.98] transition-transform">
+<span class="material-symbols-outlined text-lg">add</span>
+<span>New Transfer</span>
+</button>
+</div>
+<div class="p-3 mb-2">
+<div class="flex items-center gap-1">
+<a class="flex-1 flex items-center gap-2 px-2 py-2 text-slate-500 hover:text-slate-300 text-[11px] font-medium transition-colors" href="#">
+<span class="material-symbols-outlined text-sm">help</span>
+                    Support
+                </a>
+<a class="flex-1 flex items-center gap-2 px-2 py-2 text-slate-500 hover:text-slate-300 text-[11px] font-medium transition-colors" href="#">
+<span class="material-symbols-outlined text-sm">terminal</span>
+                    Logs
+                </a>
+</div>
+</div>
+</aside>
+<!-- Main Content Area -->
+<main class="flex-1 flex flex-col min-w-0 bg-surface-container-low relative">
+<!-- Predicted Component: TopNavBar -->
+<header class="w-full h-16 flex justify-between items-center px-6 w-full sticky top-0 z-40 bg-[#131b2e]/80 backdrop-blur-xl dark:bg-slate-950/80 no-border bg-gradient-to-b from-black/10 to-transparent">
+<!-- Breadcrumbs -->
+<nav class="flex items-center text-sm font-headline tracking-tight">
+<a class="text-slate-400 hover:text-on-surface flex items-center gap-1" href="#">
+<span class="material-symbols-outlined text-lg">database</span>
+                    documents
+                </a>
+<span class="mx-2 text-slate-600">/</span>
+<a class="text-slate-400 hover:text-on-surface" href="#">2024</a>
+<span class="mx-2 text-slate-600">/</span>
+<span class="text-on-surface font-bold text-[#f38020] border-b-2 border-[#f38020] pb-1">Current Folder</span>
+</nav>
+<div class="flex items-center gap-4">
+<div class="hidden lg:flex items-center bg-surface-container-lowest px-3 py-1.5 rounded-lg border border-white/5 focus-within:border-primary/50 transition-all">
+<span class="material-symbols-outlined text-slate-500 text-lg mr-2">search</span>
+<input class="bg-transparent border-none p-0 focus:ring-0 text-sm text-on-surface w-48 lg:w-64" placeholder="搜索文件..." type="text"/>
+</div>
+<div class="flex items-center gap-2">
+<button class="p-2 text-slate-400 hover:text-on-surface hover:bg-white/5 rounded-lg cursor-pointer transition-all">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<button class="p-2 text-slate-400 hover:text-on-surface hover:bg-white/5 rounded-lg cursor-pointer transition-all">
+<span class="material-symbols-outlined">cloud_done</span>
+</button>
+<div class="h-8 w-8 rounded-full bg-slate-700 overflow-hidden ml-2 cursor-pointer">
+<img class="w-full h-full object-cover" data-alt="close-up portrait of a professional male software engineer smiling in a modern office environment with soft bokeh" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCQ_WGqYS1wM6P9MLkszf1-2kcOFrDv40m9q32DRv9vdXNZboWXkPidP6kq4GqshuSgbpdqoc2YVk0Wuii7UjNV90lisYWl6xh0R9RIqcHQNEjt_W7x8ayMR0_WRlfya2tyugaj2FN6kkrPRAAtTelPmFyMKw0QZAd8mAnC3g6qrisqRrIbS88Uw_1_D5IQuTmAOeP8vjMasp0UBPMu9KGVj8Psg84X_xIEJ8FTd5pFcy8VJ2maYOYgL3DvrSIbNECL2nKmS96F8Hk"/>
+</div>
+</div>
+</div>
+</header>
+<!-- Contextual Action Bar -->
+<div class="px-6 py-4 flex flex-wrap items-center justify-between gap-4">
+<div class="flex items-center gap-2">
+<button class="bg-gradient-to-br from-primary-container to-primary text-on-primary-container px-4 py-2 rounded-md text-sm font-bold flex items-center gap-2 shadow-lg shadow-primary-container/20 hover:brightness-110 active:scale-95 transition-all">
+<span class="material-symbols-outlined text-lg">upload</span>
+                    上传文件
+                </button>
+<button class="bg-surface-container-high text-primary px-4 py-2 rounded-md text-sm font-semibold flex items-center gap-2 hover:bg-surface-container-highest active:scale-95 transition-all">
+<span class="material-symbols-outlined text-lg">create_new_folder</span>
+                    新建文件夹
+                </button>
+<button class="bg-surface-container-high text-on-surface-variant px-4 py-2 rounded-md text-sm font-semibold flex items-center gap-2 hover:bg-surface-container-highest active:scale-95 transition-all">
+<span class="material-symbols-outlined text-lg">refresh</span>
+                    刷新
+                </button>
+</div>
+<div class="flex items-center gap-2 opacity-50 pointer-events-none">
+<span class="text-xs text-on-surface-variant mr-2">已选择 0 个项目</span>
+<button class="text-on-surface-variant p-2 rounded-md hover:bg-white/5">
+<span class="material-symbols-outlined text-lg">download</span>
+</button>
+<button class="text-error p-2 rounded-md hover:bg-error/10">
+<span class="material-symbols-outlined text-lg">delete</span>
+</button>
+</div>
+</div>
+<!-- File Browser Table Container -->
+<div class="flex-1 px-6 pb-20 overflow-auto">
+<div class="w-full bg-surface-container rounded-lg p-2 min-w-[800px]">
+<div class="grid grid-cols-12 gap-4 px-4 py-3 text-[11px] font-bold uppercase tracking-widest text-on-surface-variant border-b border-white/5 mb-1">
+<div class="col-span-5 flex items-center gap-4">
+<input class="w-4 h-4 rounded border-outline-variant bg-surface-container-lowest text-primary focus:ring-primary focus:ring-offset-0" type="checkbox"/>
+                        名称
+                    </div>
+<div class="col-span-2">大小</div>
+<div class="col-span-2">最后修改</div>
+<div class="col-span-3">ETag</div>
+</div>
+<!-- Table Content Rows (No borders between rows, only 4px gap implied by margin) -->
+<div class="space-y-1">
+<!-- Folder Row -->
+<div class="grid grid-cols-12 gap-4 px-4 py-3 items-center group hover:bg-surface-container-highest rounded-lg transition-all cursor-pointer">
+<div class="col-span-5 flex items-center gap-4">
+<input class="w-4 h-4 rounded border-outline-variant bg-surface-container-lowest text-primary focus:ring-primary focus:ring-offset-0" type="checkbox"/>
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-tertiary" style="font-variation-settings: 'FILL' 1;">folder</span>
+<span class="text-sm font-medium text-on-surface">财务报表_2023</span>
+</div>
+</div>
+<div class="col-span-2 text-sm text-on-surface-variant">--</div>
+<div class="col-span-2 text-sm text-on-surface-variant">2024-01-15 14:20</div>
+<div class="col-span-3 text-xs font-mono text-on-secondary-container truncate">"7e2a9b1c..."</div>
+</div>
+<!-- Uploading State Row -->
+<div class="grid grid-cols-12 gap-4 px-4 py-3 items-center group bg-surface-container-low rounded-lg transition-all border border-primary/20">
+<div class="col-span-5 flex items-center gap-4">
+<div class="w-4 h-4 flex items-center justify-center">
+<span class="material-symbols-outlined text-primary text-[10px] animate-spin">sync</span>
+</div>
+<div class="flex flex-col gap-1 flex-1">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-on-surface-variant">video_file</span>
+<span class="text-sm font-medium text-on-surface">产品演示视频_4K.mp4</span>
+</div>
+<div class="w-full h-1 bg-secondary-container rounded-full mt-1 overflow-hidden">
+<div class="h-full bg-gradient-to-r from-primary-container to-primary w-[65%] rounded-full shadow-[0_0_8px_rgba(243,128,32,0.4)]"></div>
+</div>
+</div>
+</div>
+<div class="col-span-2 text-[11px] text-primary flex flex-col">
+<span>65% (420 MB / 646 MB)</span>
+<span class="text-[9px] text-on-surface-variant">12.4 MB/s</span>
+</div>
+<div class="col-span-2 text-sm text-on-surface-variant italic">正在上传...</div>
+<div class="col-span-3 flex justify-end pr-2">
+<button class="text-on-surface-variant hover:text-error transition-colors">
+<span class="material-symbols-outlined text-lg">close</span>
+</button>
+</div>
+</div>
+<!-- File Row -->
+<div class="grid grid-cols-12 gap-4 px-4 py-3 items-center group hover:bg-surface-container-highest rounded-lg transition-all cursor-pointer">
+<div class="col-span-5 flex items-center gap-4">
+<input class="w-4 h-4 rounded border-outline-variant bg-surface-container-lowest text-primary focus:ring-primary focus:ring-offset-0" type="checkbox"/>
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-tertiary">description</span>
+<span class="text-sm font-medium text-on-surface">系统设计规范.pdf</span>
+</div>
+</div>
+<div class="col-span-2 text-sm text-on-surface-variant">4.2 MB</div>
+<div class="col-span-2 text-sm text-on-surface-variant">2024-03-02 09:45</div>
+<div class="col-span-3 text-xs font-mono text-on-secondary-container truncate">"9f8c1d5e..."</div>
+</div>
+<!-- File Row -->
+<div class="grid grid-cols-12 gap-4 px-4 py-3 items-center group hover:bg-surface-container-highest rounded-lg transition-all cursor-pointer">
+<div class="col-span-5 flex items-center gap-4">
+<input class="w-4 h-4 rounded border-outline-variant bg-surface-container-lowest text-primary focus:ring-primary focus:ring-offset-0" type="checkbox"/>
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-primary">image</span>
+<span class="text-sm font-medium text-on-surface">主页背景图_高质.jpg</span>
+</div>
+</div>
+<div class="col-span-2 text-sm text-on-surface-variant">12.8 MB</div>
+<div class="col-span-2 text-sm text-on-surface-variant">2024-02-28 16:12</div>
+<div class="col-span-3 text-xs font-mono text-on-secondary-container truncate">"3a4b5c6d..."</div>
+</div>
+<!-- File Row -->
+<div class="grid grid-cols-12 gap-4 px-4 py-3 items-center group hover:bg-surface-container-highest rounded-lg transition-all cursor-pointer">
+<div class="col-span-5 flex items-center gap-4">
+<input class="w-4 h-4 rounded border-outline-variant bg-surface-container-lowest text-primary focus:ring-primary focus:ring-offset-0" type="checkbox"/>
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-on-surface-variant">terminal</span>
+<span class="text-sm font-medium text-on-surface">deploy_config.yaml</span>
+</div>
+</div>
+<div class="col-span-2 text-sm text-on-surface-variant">14 KB</div>
+<div class="col-span-2 text-sm text-on-surface-variant">2024-03-10 11:30</div>
+<div class="col-span-3 text-xs font-mono text-on-secondary-container truncate">"1b2c3d4e..."</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Predicted Component: Footer -->
+<footer class="fixed bottom-0 right-0 p-4 rounded-tl-xl flex items-center gap-6 bg-[#0b1326] dark:bg-black glassmorphism blur-md bg-white/5 shadow-[0_20px_40px_rgba(6,14,32,0.4)]">
+<div class="flex items-center gap-2">
+<div class="w-2 h-2 rounded-full bg-tertiary shadow-[0_0_8px_#89ceff]"></div>
+<span class="text-[11px] uppercase tracking-widest text-slate-500 font-['Inter']">System Status: Optimal</span>
+</div>
+<nav class="flex items-center gap-4">
+<a class="text-slate-500 hover:text-white transition-colors text-[11px] uppercase tracking-widest" href="#">Terms</a>
+<a class="text-slate-500 hover:text-white transition-colors text-[11px] uppercase tracking-widest" href="#">Privacy</a>
+<a class="text-slate-500 hover:text-white transition-colors text-[11px] uppercase tracking-widest" href="#">API Docs</a>
+</nav>
+<span class="text-slate-500 text-[11px] uppercase tracking-widest">© 2024 R2Nova Kinetic Vault</span>
+</footer>
+<!-- Modern Transfer HUD -->
+<div class="fixed bottom-20 right-8 w-80 surface-bright glass bg-surface-bright/60 rounded-xl p-4 shadow-2xl border border-white/5 z-50">
+<div class="flex items-center justify-between mb-3">
+<h3 class="text-xs font-bold text-on-surface flex items-center gap-2">
+<span class="material-symbols-outlined text-tertiary text-sm">swap_vert</span>
+                    传输管理器
+                </h3>
+<span class="text-[10px] text-primary font-bold">正在进行 (1)</span>
+</div>
+<div class="space-y-3">
+<div class="flex flex-col gap-1.5">
+<div class="flex justify-between text-[10px] text-on-surface-variant">
+<span class="truncate w-40">产品演示视频_4K.mp4</span>
+<span>65%</span>
+</div>
+<div class="w-full h-1 bg-white/5 rounded-full overflow-hidden">
+<div class="h-full bg-tertiary w-[65%] rounded-full shadow-[0_0_8px_rgba(137,206,255,0.4)]"></div>
+</div>
+</div>
+<div class="flex items-center justify-between text-[9px] text-slate-500">
+<span>剩余时间: 约 18 秒</span>
+<div class="flex items-center gap-2">
+<button class="hover:text-on-surface"><span class="material-symbols-outlined text-sm">pause</span></button>
+<button class="hover:text-on-surface"><span class="material-symbols-outlined text-sm">cancel</span></button>
+</div>
+</div>
+</div>
+</div>
+</main>
+</body></html>

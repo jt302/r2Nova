@@ -66,16 +66,13 @@ export function Sidebar({
   ]
 
   return (
-    <aside className="h-full w-64 flex-shrink-0 flex flex-col h-screen sticky top-0 bg-card border-r">
+    <aside className="h-full w-48 flex-shrink-0 flex flex-col sticky top-0 bg-card border-r">
       <div className="p-6 flex items-center gap-3">
         <div className="w-8 h-8 rounded bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center">
           <Database className="w-5 h-5 text-primary-foreground" />
         </div>
         <div>
-          <h1 className="text-xl font-black text-primary tracking-tighter">R2Nova</h1>
-          <p className="text-[10px] uppercase tracking-widest text-muted-foreground font-bold">
-            {t('app.tagline')}
-          </p>
+          <h1 className="text-xl font-black text-primary tracking-tighter">{t('app.name')}</h1>
         </div>
       </div>
 

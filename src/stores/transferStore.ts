@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import { listen } from '@tauri-apps/api/event'
+import { logger } from '../services/loggerService'
 
 export interface TransferTask {
   id: string
@@ -108,10 +109,10 @@ export function initTransferListeners() {
   if (listenersInitialized) return
   listenersInitialized = true
 
-  console.log('[Transfer] Initializing transfer event listeners...')
+  logger.info('[Transfer] Initializing transfer event listeners')
 
   listen<TransferProgressPayload>('transfer-progress', event => {
-    console.log('[Transfer] Progress event received:', event.payload)
+    logger.debug('[Transfer] Progress event received', { taskId: event.payload.task_id })
     const payload = event.payload
     const store = useTransferStore.getState()
 
@@ -134,7 +135,10 @@ export function initTransferListeners() {
   })
 
   listen<TransferCompletedPayload>('transfer-completed', event => {
-    console.log('[Transfer] Completed event received:', event.payload)
+    logger.info('[Transfer] Completed event received', {
+      taskId: event.payload.task_id,
+      bucket: event.payload.bucket,
+    })
     const { task_id, bucket, key, transfer_type } = event.payload
     useTransferStore.getState().completeTask(task_id)
 
@@ -152,7 +156,10 @@ export function initTransferListeners() {
   })
 
   listen<TransferFailedPayload>('transfer-failed', event => {
-    console.log('[Transfer] Failed event received:', event.payload)
+    logger.error('[Transfer] Failed event received', {
+      taskId: event.payload.task_id,
+      error: event.payload.error,
+    })
     const { task_id, error } = event.payload
     useTransferStore.getState().failTask(task_id, error)
 
