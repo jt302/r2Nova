@@ -1,5 +1,5 @@
-use tauri::command;
 use serde::Serialize;
+use tauri::command;
 
 use crate::commands::ApiResponse;
 use crate::errors::AppError;

@@ -1,7 +1,7 @@
-use tauri::{command, AppHandle, Emitter, State};
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 use std::sync::Arc;
+use tauri::{command, AppHandle, Emitter, State};
 
 use crate::commands::ApiResponse;
 use crate::errors::AppError;
@@ -75,7 +75,11 @@ pub async fn list_objects(
     let client = r2_manager.get_or_create(&account, &secret_key).await?;
 
     let (objects, next_token) = client
-        .list_objects(&request.bucket, request.prefix.as_deref(), request.continuation_token)
+        .list_objects(
+            &request.bucket,
+            request.prefix.as_deref(),
+            request.continuation_token,
+        )
         .await?;
 
     Ok(ApiResponse::success(ListObjectsResponse {
@@ -125,7 +129,8 @@ pub async fn upload_file(
             total_bytes,
             move |bytes_transferred, speed_mbps| {
                 if let Ok(mut tm) = state_for_callback.transfer_manager.try_lock() {
-                    let _ = tm.update_progress(&task_id_for_callback, bytes_transferred, speed_mbps);
+                    let _ =
+                        tm.update_progress(&task_id_for_callback, bytes_transferred, speed_mbps);
                 }
             },
         )
@@ -190,11 +195,11 @@ pub async fn download_file(
     let key = request.key.clone();
     let path = PathBuf::from(&request.local_path);
     let filename = key.split('/').last().unwrap_or(&key).to_string();
-    
+
     let config_manager_arc = Arc::clone(&state.config_manager);
     let r2_manager_arc = Arc::clone(&state.r2_manager);
     let transfer_manager_arc = Arc::clone(&state.transfer_manager);
-    
+
     tokio::spawn(async move {
         let result = download_in_background(
             r2_manager_arc.clone(),
@@ -208,26 +213,33 @@ pub async fn download_file(
             &task_id_clone,
             &filename,
             app_handle.clone(),
-        ).await;
+        )
+        .await;
 
         let mut transfer_manager = transfer_manager_arc.lock().await;
         match result {
             Ok(()) => {
                 let _ = transfer_manager.complete_task(&task_id_clone);
-                let _ = app_handle.emit("transfer-completed", serde_json::json!({
-                    "task_id": task_id_clone,
-                    "transfer_type": "download",
-                    "bucket": bucket,
-                    "key": key,
-                }));
+                let _ = app_handle.emit(
+                    "transfer-completed",
+                    serde_json::json!({
+                        "task_id": task_id_clone,
+                        "transfer_type": "download",
+                        "bucket": bucket,
+                        "key": key,
+                    }),
+                );
             }
             Err(e) => {
                 let error_msg = e.to_string();
                 let _ = transfer_manager.fail_task(&task_id_clone, error_msg.clone());
-                let _ = app_handle.emit("transfer-failed", serde_json::json!({
-                    "task_id": task_id_clone,
-                    "error": error_msg,
-                }));
+                let _ = app_handle.emit(
+                    "transfer-failed",
+                    serde_json::json!({
+                        "task_id": task_id_clone,
+                        "error": error_msg,
+                    }),
+                );
             }
         }
     });
@@ -250,12 +262,12 @@ async fn download_in_background(
 ) -> Result<(), AppError> {
     let mut r2_manager = r2_manager.lock().await;
     let client = r2_manager.get_or_create(account, secret_key).await?;
-    
+
     let task_id_clone = task_id.to_string();
     let filename_clone = filename.to_string();
     let bucket_clone = bucket.to_string();
     let key_clone = key.to_string();
-    
+
     client
         .download_object_with_progress(
             bucket,
@@ -266,17 +278,20 @@ async fn download_in_background(
                 if let Ok(mut tm) = transfer_manager.try_lock() {
                     let _ = tm.update_progress(&task_id_clone, bytes_transferred, speed_mbps);
                 }
-                let _ = app_handle.emit("transfer-progress", serde_json::json!({
-                    "task_id": task_id_clone,
-                    "transfer_type": "download",
-                    "filename": &filename_clone,
-                    "bucket": &bucket_clone,
-                    "key": &key_clone,
-                    "bytes_transferred": bytes_transferred,
-                    "bytes_total": total_bytes,
-                    "speed_mbps": speed_mbps,
-                    "status": "in_progress",
-                }));
+                let _ = app_handle.emit(
+                    "transfer-progress",
+                    serde_json::json!({
+                        "task_id": task_id_clone,
+                        "transfer_type": "download",
+                        "filename": &filename_clone,
+                        "bucket": &bucket_clone,
+                        "key": &key_clone,
+                        "bytes_transferred": bytes_transferred,
+                        "bytes_total": total_bytes,
+                        "speed_mbps": speed_mbps,
+                        "status": "in_progress",
+                    }),
+                );
             },
         )
         .await
@@ -341,17 +356,22 @@ pub async fn delete_folder(
 
     let bucket = request.bucket.clone();
     let key = request.key.clone();
-    
+
     let app_handle_for_progress = app_handle.clone();
-    
-    client.delete_folder(&request.bucket, &request.key, move |deleted, total| {
-        let _ = app_handle_for_progress.emit("delete-progress", serde_json::json!({
-            "bucket": bucket,
-            "key": key,
-            "deleted": deleted,
-            "total": total,
-        }));
-    }).await?;
+
+    client
+        .delete_folder(&request.bucket, &request.key, move |deleted, total| {
+            let _ = app_handle_for_progress.emit(
+                "delete-progress",
+                serde_json::json!({
+                    "bucket": bucket,
+                    "key": key,
+                    "deleted": deleted,
+                    "total": total,
+                }),
+            );
+        })
+        .await?;
 
     Ok(ApiResponse::success(()))
 }
@@ -386,7 +406,9 @@ pub async fn preview_folder_contents(
     let client = r2_manager.get_or_create(&account, &secret_key).await?;
 
     let limit = request.limit.unwrap_or(100);
-    let (objects, has_more) = client.preview_folder_contents(&request.bucket, &request.key, limit).await?;
+    let (objects, has_more) = client
+        .preview_folder_contents(&request.bucket, &request.key, limit)
+        .await?;
     let total_count = objects.len();
 
     Ok(ApiResponse::success(PreviewFolderResponse {
@@ -458,9 +480,13 @@ pub async fn list_multipart_uploads(
     let mut r2_manager = state.r2_manager.lock().await;
     let client = r2_manager.get_or_create(&account, &secret_key).await?;
 
-    let uploads = client.list_multipart_uploads(&request.bucket, request.prefix.as_deref()).await?;
+    let uploads = client
+        .list_multipart_uploads(&request.bucket, request.prefix.as_deref())
+        .await?;
 
-    Ok(ApiResponse::success(ListMultipartUploadsResponse { uploads }))
+    Ok(ApiResponse::success(ListMultipartUploadsResponse {
+        uploads,
+    }))
 }
 
 #[derive(Debug, Deserialize)]
@@ -485,7 +511,9 @@ pub async fn abort_multipart_upload(
     let mut r2_manager = state.r2_manager.lock().await;
     let client = r2_manager.get_or_create(&account, &secret_key).await?;
 
-    client.abort_multipart_upload(&request.bucket, &request.key, &request.upload_id).await?;
+    client
+        .abort_multipart_upload(&request.bucket, &request.key, &request.upload_id)
+        .await?;
 
     Ok(ApiResponse::success(()))
 }

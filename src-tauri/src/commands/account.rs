@@ -1,6 +1,6 @@
-use tauri::{command, State};
 use serde::{Deserialize, Serialize};
-use tracing::{info, error};
+use tauri::{command, State};
+use tracing::{error, info};
 
 use crate::commands::ApiResponse;
 use crate::errors::AppError;
@@ -32,7 +32,7 @@ pub async fn save_account(
     state: State<'_, AppState>,
 ) -> Result<ApiResponse<AccountResponse>, AppError> {
     info!("Received save_account request for: {}", request.name);
-    
+
     let input = AccountInput {
         name: request.name,
         endpoint: request.endpoint,
@@ -41,10 +41,13 @@ pub async fn save_account(
     };
 
     let mut config_manager = state.config_manager.lock().await;
-    
+
     match config_manager.save_account(input) {
         Ok(account) => {
-            info!("Account saved successfully: {} (ID: {})", account.name, account.id);
+            info!(
+                "Account saved successfully: {} (ID: {})",
+                account.name, account.id
+            );
             Ok(ApiResponse::success(AccountResponse { account }))
         }
         Err(e) => {
@@ -96,8 +99,11 @@ pub async fn update_account(
     request: UpdateAccountRequest,
     state: State<'_, AppState>,
 ) -> Result<ApiResponse<AccountResponse>, AppError> {
-    info!("Received update_account request for: {} (ID: {})", request.name, request.id);
-    
+    info!(
+        "Received update_account request for: {} (ID: {})",
+        request.name, request.id
+    );
+
     let input = AccountInput {
         name: request.name,
         endpoint: request.endpoint,
@@ -106,10 +112,13 @@ pub async fn update_account(
     };
 
     let mut config_manager = state.config_manager.lock().await;
-    
+
     match config_manager.update_account(&request.id, input) {
         Ok(account) => {
-            info!("Account updated successfully: {} (ID: {})", account.name, account.id);
+            info!(
+                "Account updated successfully: {} (ID: {})",
+                account.name, account.id
+            );
             Ok(ApiResponse::success(AccountResponse { account }))
         }
         Err(e) => {
@@ -125,9 +134,9 @@ pub async fn set_current_account(
     state: State<'_, AppState>,
 ) -> Result<ApiResponse<()>, AppError> {
     info!("Received set_current_account request for: {}", id);
-    
+
     let mut config_manager = state.config_manager.lock().await;
-    
+
     match config_manager.set_active_account(Some(&id)) {
         Ok(_) => {
             info!("Current account set successfully: {}", id);

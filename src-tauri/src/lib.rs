@@ -30,7 +30,10 @@ impl AppState {
     }
 }
 
-#[cfg_attr(all(target_os = "android", target_os = "ios"), tauri::mobile_entry_point)]
+#[cfg_attr(
+    all(target_os = "android", target_os = "ios"),
+    tauri::mobile_entry_point
+)]
 pub fn run() {
     tracing_subscriber::fmt::init();
 
@@ -43,7 +46,9 @@ pub fn run() {
             let handle_for_state = handle.clone();
 
             tauri::async_runtime::block_on(async move {
-                let state = AppState::new(handle_for_state).await.expect("Failed to initialize app state");
+                let state = AppState::new(handle_for_state)
+                    .await
+                    .expect("Failed to initialize app state");
                 handle.manage(state);
             });
 

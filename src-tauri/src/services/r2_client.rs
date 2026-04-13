@@ -1,9 +1,9 @@
-use aws_sdk_s3::{Client, Config};
 use aws_config::BehaviorVersion;
+use aws_sdk_s3::{Client, Config};
+use futures::StreamExt;
 use std::collections::HashMap;
 use std::path::Path;
 use tokio::io::AsyncWriteExt;
-use futures::StreamExt;
 use tracing::{debug, error, info};
 
 use crate::errors::{AppError, AppResult};
@@ -16,16 +16,21 @@ pub struct R2Client {
 
 impl R2Client {
     pub async fn new(account: &Account, secret_key: &str) -> AppResult<Self> {
-        info!("Creating R2Client for account: {} (endpoint: {})", account.name, account.endpoint);
-        
-        let endpoint_url = if account.endpoint.starts_with("http://") || account.endpoint.starts_with("https://") {
+        info!(
+            "Creating R2Client for account: {} (endpoint: {})",
+            account.name, account.endpoint
+        );
+
+        let endpoint_url = if account.endpoint.starts_with("http://")
+            || account.endpoint.starts_with("https://")
+        {
             account.endpoint.clone()
         } else {
             format!("https://{}", account.endpoint)
         };
-        
+
         info!("Using endpoint URL: {}", endpoint_url);
-        
+
         let credentials = aws_sdk_s3::config::Credentials::new(
             &account.access_key_id,
             secret_key,
@@ -33,18 +38,18 @@ impl R2Client {
             None,
             "r2nova",
         );
-        
+
         let config = Config::builder()
             .behavior_version(BehaviorVersion::latest())
             .endpoint_url(endpoint_url)
             .credentials_provider(credentials)
             .region(aws_sdk_s3::config::Region::new("auto"))
             .build();
-        
+
         let client = Client::from_conf(config);
-        
+
         info!("R2Client created successfully");
-        
+
         Ok(Self {
             client,
             account_id: account.id.clone(),
@@ -53,42 +58,44 @@ impl R2Client {
 
     pub async fn list_buckets(&self) -> AppResult<Vec<BucketInfo>> {
         info!("Listing buckets...");
-        
-        let resp = match self.client
-            .list_buckets()
-            .send()
-            .await {
-                Ok(resp) => {
-                    info!("Successfully listed buckets");
-                    resp
-                }
-                Err(e) => {
-                    error!("Failed to list buckets: {:?}", e);
-                    let error_msg = format!("{:?}", e);
-                    
-                    if error_msg.contains("dispatch") {
-                        return Err(AppError::S3Error(
+
+        let resp = match self.client.list_buckets().send().await {
+            Ok(resp) => {
+                info!("Successfully listed buckets");
+                resp
+            }
+            Err(e) => {
+                error!("Failed to list buckets: {:?}", e);
+                let error_msg = format!("{:?}", e);
+
+                if error_msg.contains("dispatch") {
+                    return Err(AppError::S3Error(
                             "网络连接失败，请检查: 1) 网络连接是否正常 2) R2 端点地址是否正确 3) 是否有代理或防火墙阻挡".to_string()
                         ));
-                    }
-                    
-                    if error_msg.contains("credential") || error_msg.contains("auth") || error_msg.contains("signature") {
-                        return Err(AppError::S3Error(
-                            "认证失败，请检查 Access Key ID 和 Secret Access Key 是否正确".to_string()
-                        ));
-                    }
-                    
-                    return Err(AppError::S3Error(format!("S3 请求失败: {}", e)));
                 }
-            };
 
-        let buckets: Vec<BucketInfo> = resp.buckets()
+                if error_msg.contains("credential")
+                    || error_msg.contains("auth")
+                    || error_msg.contains("signature")
+                {
+                    return Err(AppError::S3Error(
+                        "认证失败，请检查 Access Key ID 和 Secret Access Key 是否正确".to_string(),
+                    ));
+                }
+
+                return Err(AppError::S3Error(format!("S3 请求失败: {}", e)));
+            }
+        };
+
+        let buckets: Vec<BucketInfo> = resp
+            .buckets()
             .iter()
             .map(|b| BucketInfo {
                 name: b.name().unwrap_or("").to_string(),
-                creation_date: b.creation_date().map(|d| {
-                    chrono::DateTime::from_timestamp(d.secs(), d.subsec_nanos())
-                }).flatten(),
+                creation_date: b
+                    .creation_date()
+                    .map(|d| chrono::DateTime::from_timestamp(d.secs(), d.subsec_nanos()))
+                    .flatten(),
                 object_count: None,
                 total_size: None,
             })
@@ -104,12 +111,12 @@ impl R2Client {
         prefix: Option<&str>,
         continuation_token: Option<String>,
     ) -> AppResult<(Vec<ObjectInfo>, Option<String>)> {
-        info!("Listing objects in bucket: {}, prefix: {:?}", bucket, prefix);
-        
-        let mut req = self.client
-            .list_objects_v2()
-            .bucket(bucket)
-            .max_keys(100);
+        info!(
+            "Listing objects in bucket: {}, prefix: {:?}",
+            bucket, prefix
+        );
+
+        let mut req = self.client.list_objects_v2().bucket(bucket).max_keys(100);
 
         if let Some(prefix) = prefix {
             req = req.prefix(prefix);
@@ -127,19 +134,22 @@ impl R2Client {
             Err(e) => {
                 error!("Failed to list objects: {:?}", e);
                 let error_msg = format!("{:?}", e);
-                
+
                 if error_msg.contains("dispatch") {
                     return Err(AppError::S3Error(
-                        "网络连接失败，请检查网络连接是否正常".to_string()
+                        "网络连接失败，请检查网络连接是否正常".to_string(),
                     ));
                 }
-                
-                if error_msg.contains("credential") || error_msg.contains("auth") || error_msg.contains("signature") {
+
+                if error_msg.contains("credential")
+                    || error_msg.contains("auth")
+                    || error_msg.contains("signature")
+                {
                     return Err(AppError::S3Error(
-                        "认证失败，请检查密钥是否正确".to_string()
+                        "认证失败，请检查密钥是否正确".to_string(),
                     ));
                 }
-                
+
                 return Err(AppError::S3Error(format!("S3 请求失败: {}", e)));
             }
         };
@@ -167,22 +177,24 @@ impl R2Client {
             .map(|obj| ObjectInfo {
                 key: obj.key().unwrap_or("").to_string(),
                 size: obj.size().unwrap_or(0),
-                last_modified: obj.last_modified().map(|d| {
-                    chrono::DateTime::from_timestamp(d.secs(), d.subsec_nanos())
-                }).flatten(),
+                last_modified: obj
+                    .last_modified()
+                    .map(|d| chrono::DateTime::from_timestamp(d.secs(), d.subsec_nanos()))
+                    .flatten(),
                 etag: obj.e_tag().map(|e| e.to_string()),
                 is_directory: obj.key().map(|k| k.ends_with('/')).unwrap_or(false),
             })
             .collect();
 
         let next_token = resp.next_continuation_token().map(|s| s.to_string());
-        
+
         info!("Found {} objects", objects.len());
         Ok((objects, next_token))
     }
 
     pub async fn get_object(&self, bucket: &str, key: &str) -> AppResult<bytes::Bytes> {
-        let resp = self.client
+        let resp = self
+            .client
             .get_object()
             .bucket(bucket)
             .key(key)
@@ -204,7 +216,8 @@ impl R2Client {
         bucket: &str,
         key: &str,
     ) -> AppResult<aws_sdk_s3::operation::head_object::HeadObjectOutput> {
-        let resp = self.client
+        let resp = self
+            .client
             .head_object()
             .bucket(bucket)
             .key(key)
@@ -226,7 +239,8 @@ impl R2Client {
     where
         F: FnMut(i64, f64) + Send,
     {
-        let resp = self.client
+        let resp = self
+            .client
             .get_object()
             .bucket(bucket)
             .key(key)
@@ -235,7 +249,8 @@ impl R2Client {
             .map_err(|e| AppError::S3Error(e.to_string()))?;
 
         let mut stream = resp.body.into_async_read();
-        let mut file = tokio::fs::File::create(local_path).await
+        let mut file = tokio::fs::File::create(local_path)
+            .await
             .map_err(|e| AppError::Io(e))?;
 
         let mut downloaded: i64 = 0;
@@ -246,7 +261,8 @@ impl R2Client {
             match tokio::io::AsyncReadExt::read(&mut stream, &mut buffer).await {
                 Ok(0) => break,
                 Ok(n) => {
-                    file.write_all(&buffer[..n]).await
+                    file.write_all(&buffer[..n])
+                        .await
                         .map_err(|e| AppError::Io(e))?;
                     downloaded += n as i64;
 
@@ -267,12 +283,7 @@ impl R2Client {
         Ok(())
     }
 
-    pub async fn put_object(
-        &self,
-        bucket: &str,
-        key: &str,
-        data: bytes::Bytes,
-    ) -> AppResult<()> {
+    pub async fn put_object(&self, bucket: &str, key: &str, data: bytes::Bytes) -> AppResult<()> {
         self.client
             .put_object()
             .bucket(bucket)
@@ -302,18 +313,26 @@ impl R2Client {
         const CHUNK_SIZE: usize = 8 * 1024 * 1024;
         const MIN_MULTIPART_SIZE: i64 = 8 * 1024 * 1024;
 
-        info!("UPLOAD START: file_size={}, threshold={}, path={:?}", total_bytes, MIN_MULTIPART_SIZE, local_path);
+        info!(
+            "UPLOAD START: file_size={}, threshold={}, path={:?}",
+            total_bytes, MIN_MULTIPART_SIZE, local_path
+        );
 
-        let mut file = tokio::fs::File::open(local_path).await
+        let mut file = tokio::fs::File::open(local_path)
+            .await
             .map_err(|e| AppError::Io(e))?;
 
         if total_bytes < MIN_MULTIPART_SIZE {
-            info!("File size {} bytes is smaller than multipart threshold, using put_object", total_bytes);
-            
+            info!(
+                "File size {} bytes is smaller than multipart threshold, using put_object",
+                total_bytes
+            );
+
             let mut buffer = Vec::with_capacity(total_bytes as usize);
-            file.read_to_end(&mut buffer).await
+            file.read_to_end(&mut buffer)
+                .await
                 .map_err(|e| AppError::Io(e))?;
-            
+
             self.client
                 .put_object()
                 .bucket(bucket)
@@ -322,15 +341,22 @@ impl R2Client {
                 .send()
                 .await
                 .map_err(|e| AppError::S3Error(format!("Failed to upload file: {}", e)))?;
-            
+
             progress_callback(total_bytes, 0.0);
-            info!("Successfully uploaded small file {} bytes for key: {}", total_bytes, key);
+            info!(
+                "Successfully uploaded small file {} bytes for key: {}",
+                total_bytes, key
+            );
             return Ok(());
         }
 
-        info!("Using MULTIPART upload for file size: {} bytes", total_bytes);
+        info!(
+            "Using MULTIPART upload for file size: {} bytes",
+            total_bytes
+        );
 
-        let create_resp = self.client
+        let create_resp = self
+            .client
             .create_multipart_upload()
             .bucket(bucket)
             .key(key)
@@ -338,12 +364,14 @@ impl R2Client {
             .await
             .map_err(|e| AppError::S3Error(e.to_string()))?;
 
-        let upload_id = create_resp.upload_id()
+        let upload_id = create_resp
+            .upload_id()
             .ok_or_else(|| AppError::S3Error("Failed to get upload ID".to_string()))?;
 
         // 用于清理的闭包 - 在出错时中止 multipart upload
         let abort_upload = || async {
-            let _ = self.client
+            let _ = self
+                .client
                 .abort_multipart_upload()
                 .bucket(bucket)
                 .key(key)
@@ -357,10 +385,10 @@ impl R2Client {
         let mut part_number = 1;
         let mut uploaded_bytes: i64 = 0;
         let start_time = std::time::Instant::now();
-        
+
         const MIN_PART_SIZE: usize = 5 * 1024 * 1024;
         const READ_BUFFER_SIZE: usize = 64 * 1024;
-        
+
         let mut part_buffer: Vec<u8> = Vec::with_capacity(CHUNK_SIZE);
         let mut read_buffer = vec![0u8; READ_BUFFER_SIZE];
 
@@ -374,25 +402,26 @@ impl R2Client {
                     return Err(AppError::Io(e));
                 }
             };
-            
+
             if bytes_read == 0 {
                 break;
             }
 
             part_buffer.extend_from_slice(&read_buffer[..bytes_read]);
-            
+
             while part_buffer.len() >= MIN_PART_SIZE {
                 let upload_size = if part_buffer.len() >= CHUNK_SIZE {
                     CHUNK_SIZE
                 } else {
                     part_buffer.len()
                 };
-                
+
                 let part_data = bytes::Bytes::copy_from_slice(&part_buffer[..upload_size]);
-                
+
                 info!("Uploading part {}: size={} bytes", part_number, upload_size);
-                
-                let upload_resp = self.client
+
+                let upload_resp = self
+                    .client
                     .upload_part()
                     .bucket(bucket)
                     .key(key)
@@ -408,7 +437,7 @@ impl R2Client {
                             CompletedPart::builder()
                                 .part_number(part_number)
                                 .e_tag(resp.e_tag().unwrap_or_default())
-                                .build()
+                                .build(),
                         );
                     }
                     Err(e) => {
@@ -421,7 +450,7 @@ impl R2Client {
 
                 uploaded_bytes += upload_size as i64;
                 part_number += 1;
-                
+
                 part_buffer = part_buffer.split_off(upload_size);
 
                 let elapsed_secs = start_time.elapsed().as_secs_f64();
@@ -434,14 +463,18 @@ impl R2Client {
                 progress_callback(uploaded_bytes, speed_mbps);
             }
         }
-        
+
         if !part_buffer.is_empty() {
             let last_part_size = part_buffer.len();
-            info!("Uploading final part {}: size={} bytes", part_number, last_part_size);
-            
+            info!(
+                "Uploading final part {}: size={} bytes",
+                part_number, last_part_size
+            );
+
             let part_data = bytes::Bytes::from(part_buffer);
-            
-            let upload_resp = self.client
+
+            let upload_resp = self
+                .client
                 .upload_part()
                 .bucket(bucket)
                 .key(key)
@@ -457,7 +490,7 @@ impl R2Client {
                         CompletedPart::builder()
                             .part_number(part_number)
                             .e_tag(resp.e_tag().unwrap_or_default())
-                            .build()
+                            .build(),
                     );
                 }
                 Err(e) => {
@@ -469,7 +502,7 @@ impl R2Client {
             }
 
             uploaded_bytes += last_part_size as i64;
-            
+
             let elapsed_secs = start_time.elapsed().as_secs_f64();
             let speed_mbps = if elapsed_secs > 0.0 {
                 (uploaded_bytes as f64 / 1024.0 / 1024.0) / elapsed_secs
@@ -482,18 +515,24 @@ impl R2Client {
 
         parts.sort_by_key(|p| p.part_number());
 
-        info!("Upload complete: total_parts={}, uploaded_bytes={}, total_expected={}", parts.len(), uploaded_bytes, total_bytes);
+        info!(
+            "Upload complete: total_parts={}, uploaded_bytes={}, total_expected={}",
+            parts.len(),
+            uploaded_bytes,
+            total_bytes
+        );
 
         if parts.is_empty() {
             info!("Empty file detected, aborting multipart upload and using put_object instead");
-            let _ = self.client
+            let _ = self
+                .client
                 .abort_multipart_upload()
                 .bucket(bucket)
                 .key(key)
                 .upload_id(upload_id)
                 .send()
                 .await;
-            
+
             self.client
                 .put_object()
                 .bucket(bucket)
@@ -502,7 +541,7 @@ impl R2Client {
                 .send()
                 .await
                 .map_err(|e| AppError::S3Error(format!("Failed to upload empty file: {}", e)))?;
-            
+
             info!("Successfully uploaded empty file for key: {}", key);
             return Ok(());
         }
@@ -511,7 +550,8 @@ impl R2Client {
             .set_parts(Some(parts))
             .build();
 
-        let complete_result = self.client
+        let complete_result = self
+            .client
             .complete_multipart_upload()
             .bucket(bucket)
             .key(key)
@@ -527,22 +567,34 @@ impl R2Client {
             }
             Err(e) => {
                 let error_details = format!("{:?}", e);
-                error!("Complete multipart upload failed with details: {}", error_details);
-                
-                let abort_result = self.client
+                error!(
+                    "Complete multipart upload failed with details: {}",
+                    error_details
+                );
+
+                let abort_result = self
+                    .client
                     .abort_multipart_upload()
                     .bucket(bucket)
                     .key(key)
                     .upload_id(upload_id)
                     .send()
                     .await;
-                
+
                 match abort_result {
-                    Ok(_) => info!("Successfully aborted multipart upload after completion failure"),
-                    Err(abort_err) => error!("Failed to abort multipart upload after completion failure: {:?}", abort_err),
+                    Ok(_) => {
+                        info!("Successfully aborted multipart upload after completion failure")
+                    }
+                    Err(abort_err) => error!(
+                        "Failed to abort multipart upload after completion failure: {:?}",
+                        abort_err
+                    ),
                 }
-                
-                Err(AppError::S3Error(format!("Failed to complete multipart upload: {} (Details: {})", e, error_details)))
+
+                Err(AppError::S3Error(format!(
+                    "Failed to complete multipart upload: {} (Details: {})",
+                    e, error_details
+                )))
             }
         }
     }
@@ -604,7 +656,8 @@ impl R2Client {
         let mut continuation_token: Option<String> = None;
 
         loop {
-            let mut req = self.client
+            let mut req = self
+                .client
                 .list_objects_v2()
                 .bucket(bucket)
                 .prefix(&folder_prefix)
@@ -657,7 +710,8 @@ impl R2Client {
                 })
                 .collect();
 
-            let delete_result = self.client
+            let delete_result = self
+                .client
                 .delete_objects()
                 .bucket(bucket)
                 .delete(
@@ -689,9 +743,10 @@ impl R2Client {
                         error.message().unwrap_or("no message")
                     );
                 }
-                return Err(AppError::S3Error(
-                    format!("Failed to delete {} objects", errors_count)
-                ));
+                return Err(AppError::S3Error(format!(
+                    "Failed to delete {} objects",
+                    errors_count
+                )));
             }
         }
 
@@ -699,7 +754,12 @@ impl R2Client {
         Ok(())
     }
 
-    pub async fn preview_folder_contents(&self, bucket: &str, key: &str, limit: i32) -> AppResult<(Vec<ObjectInfo>, bool)> {
+    pub async fn preview_folder_contents(
+        &self,
+        bucket: &str,
+        key: &str,
+        limit: i32,
+    ) -> AppResult<(Vec<ObjectInfo>, bool)> {
         // 确保 key 以 / 结尾，以便匹配该前缀的所有对象
         let folder_prefix = if key.ends_with('/') {
             key.to_string()
@@ -707,7 +767,10 @@ impl R2Client {
             format!("{}/", key)
         };
 
-        info!("Previewing folder contents: {} (limit: {})", folder_prefix, limit);
+        info!(
+            "Previewing folder contents: {} (limit: {})",
+            folder_prefix, limit
+        );
 
         let mut objects: Vec<ObjectInfo> = Vec::new();
         let mut continuation_token: Option<String> = None;
@@ -715,7 +778,8 @@ impl R2Client {
         let max_items = limit as usize;
 
         loop {
-            let mut req = self.client
+            let mut req = self
+                .client
                 .list_objects_v2()
                 .bucket(bucket)
                 .prefix(&folder_prefix)
@@ -735,13 +799,14 @@ impl R2Client {
                     has_more = true;
                     break;
                 }
-                
+
                 objects.push(ObjectInfo {
                     key: obj.key().unwrap_or("").to_string(),
                     size: obj.size().unwrap_or(0),
-                    last_modified: obj.last_modified().map(|d| {
-                        chrono::DateTime::from_timestamp(d.secs(), d.subsec_nanos())
-                    }).flatten(),
+                    last_modified: obj
+                        .last_modified()
+                        .map(|d| chrono::DateTime::from_timestamp(d.secs(), d.subsec_nanos()))
+                        .flatten(),
                     etag: obj.e_tag().map(|e| e.to_string()),
                     is_directory: obj.key().map(|k| k.ends_with('/')).unwrap_or(false),
                 });
@@ -752,13 +817,17 @@ impl R2Client {
             }
 
             continuation_token = resp.next_continuation_token().map(|s| s.to_string());
-            
+
             if continuation_token.is_none() {
                 break;
             }
         }
 
-        info!("Found {} objects in folder (has_more: {})", objects.len(), has_more);
+        info!(
+            "Found {} objects in folder (has_more: {})",
+            objects.len(),
+            has_more
+        );
         Ok((objects, has_more))
     }
 
@@ -768,12 +837,13 @@ impl R2Client {
         prefix: Option<&str>,
     ) -> AppResult<Vec<crate::models::MultipartUploadInfo>> {
         use crate::models::MultipartUploadInfo;
-        
-        info!("Listing multipart uploads in bucket: {}, prefix: {:?}", bucket, prefix);
-        
-        let mut req = self.client
-            .list_multipart_uploads()
-            .bucket(bucket);
+
+        info!(
+            "Listing multipart uploads in bucket: {}, prefix: {:?}",
+            bucket, prefix
+        );
+
+        let mut req = self.client.list_multipart_uploads().bucket(bucket);
 
         if let Some(prefix) = prefix {
             req = req.prefix(prefix);
@@ -786,7 +856,10 @@ impl R2Client {
             }
             Err(e) => {
                 error!("Failed to list multipart uploads: {:?}", e);
-                return Err(AppError::S3Error(format!("Failed to list multipart uploads: {}", e)));
+                return Err(AppError::S3Error(format!(
+                    "Failed to list multipart uploads: {}",
+                    e
+                )));
             }
         };
 
@@ -796,13 +869,14 @@ impl R2Client {
             .map(|upload| MultipartUploadInfo {
                 key: upload.key().unwrap_or("").to_string(),
                 upload_id: upload.upload_id().unwrap_or("").to_string(),
-                initiated: upload.initiated().map(|d| {
-                    chrono::DateTime::from_timestamp(d.secs(), d.subsec_nanos())
-                }).flatten(),
+                initiated: upload
+                    .initiated()
+                    .map(|d| chrono::DateTime::from_timestamp(d.secs(), d.subsec_nanos()))
+                    .flatten(),
                 storage_class: upload.storage_class().map(|s| s.as_str().to_string()),
             })
             .collect();
-        
+
         info!("Found {} multipart uploads", uploads.len());
         Ok(uploads)
     }
@@ -813,9 +887,13 @@ impl R2Client {
         key: &str,
         upload_id: &str,
     ) -> AppResult<()> {
-        info!("Aborting multipart upload: bucket={}, key={}, upload_id={}", bucket, key, upload_id);
-        
-        match self.client
+        info!(
+            "Aborting multipart upload: bucket={}, key={}, upload_id={}",
+            bucket, key, upload_id
+        );
+
+        match self
+            .client
             .abort_multipart_upload()
             .bucket(bucket)
             .key(key)
@@ -829,7 +907,10 @@ impl R2Client {
             }
             Err(e) => {
                 error!("Failed to abort multipart upload: {:?}", e);
-                Err(AppError::S3Error(format!("Failed to abort multipart upload: {}", e)))
+                Err(AppError::S3Error(format!(
+                    "Failed to abort multipart upload: {}",
+                    e
+                )))
             }
         }
     }

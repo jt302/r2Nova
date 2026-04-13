@@ -67,7 +67,7 @@ impl TransferManager {
                 TransferStatus::Failed => "failed".to_string(),
             },
         };
-        
+
         let _ = self.app_handle.emit("transfer-progress", payload);
     }
 
@@ -101,7 +101,7 @@ impl TransferManager {
     ) -> String {
         let id = uuid::Uuid::new_v4().to_string();
         let now = Utc::now();
-        
+
         let task = TransferTask {
             id: id.clone(),
             transfer_type: TransferType::Upload,
@@ -117,10 +117,10 @@ impl TransferManager {
         };
 
         self.tasks.insert(id.clone(), task.clone());
-        
+
         // 发射初始进度事件，让前端知道任务已创建
         self.emit_progress(&task);
-        
+
         id
     }
 
@@ -133,7 +133,7 @@ impl TransferManager {
     ) -> String {
         let id = uuid::Uuid::new_v4().to_string();
         let now = Utc::now();
-        
+
         let task = TransferTask {
             id: id.clone(),
             transfer_type: TransferType::Download,
@@ -149,10 +149,10 @@ impl TransferManager {
         };
 
         self.tasks.insert(id.clone(), task.clone());
-        
+
         // 发射初始进度事件，让前端知道任务已创建
         self.emit_progress(&task);
-        
+
         id
     }
 
@@ -164,16 +164,21 @@ impl TransferManager {
         self.tasks.values().collect()
     }
 
-    pub fn update_progress(&mut self, id: &str, bytes_transferred: i64, speed_mbps: f64) -> AppResult<()> {
+    pub fn update_progress(
+        &mut self,
+        id: &str,
+        bytes_transferred: i64,
+        speed_mbps: f64,
+    ) -> AppResult<()> {
         if let Some(task) = self.tasks.get_mut(id) {
             task.bytes_transferred = bytes_transferred;
             task.speed_mbps = speed_mbps;
             task.updated_at = Utc::now();
             task.status = TransferStatus::InProgress;
-            
+
             let task_clone = task.clone();
             self.emit_progress(&task_clone);
-            
+
             Ok(())
         } else {
             Err(AppError::TransferNotFound(id.to_string()))
@@ -185,11 +190,11 @@ impl TransferManager {
             task.status = TransferStatus::Completed;
             task.bytes_transferred = task.bytes_total;
             task.updated_at = Utc::now();
-            
+
             // 发射完成事件到前端
             let task_clone = task.clone();
             self.emit_completed(&task_clone);
-            
+
             Ok(())
         } else {
             Err(AppError::TransferNotFound(id.to_string()))
@@ -200,10 +205,10 @@ impl TransferManager {
         if let Some(task) = self.tasks.get_mut(id) {
             task.status = TransferStatus::Failed;
             task.updated_at = Utc::now();
-            
+
             // 发射失败事件到前端
             self.emit_failed(id, &error);
-            
+
             Ok(())
         } else {
             Err(AppError::TransferNotFound(id.to_string()))
