@@ -2,6 +2,7 @@ import { create } from 'zustand'
 import { Account } from '../types'
 import { accountService } from '../services/r2Service'
 import { logger } from '../services/loggerService'
+import { useI18nStore } from './i18nStore'
 
 interface AccountState {
   accounts: Account[]
@@ -28,6 +29,10 @@ interface AccountState {
   deleteAccount: (id: string) => Promise<void>
 }
 
+function translatedError(key: string, error: unknown): string {
+  return error instanceof Error ? error.message : useI18nStore.getState().t(key)
+}
+
 export const useAccountStore = create<AccountState>()((set, get) => ({
   accounts: [],
   currentAccount: null,
@@ -46,7 +51,7 @@ export const useAccountStore = create<AccountState>()((set, get) => ({
     } catch (error) {
       logger.error('Failed to load accounts', { error: String(error) })
       set({
-        error: error instanceof Error ? error.message : 'Failed to load accounts',
+        error: translatedError('error.loadAccountsFailed', error),
         isLoading: false,
       })
     }
@@ -64,7 +69,7 @@ export const useAccountStore = create<AccountState>()((set, get) => ({
     } catch (error) {
       logger.error('Failed to add account', { error: String(error) })
       set({
-        error: error instanceof Error ? error.message : 'Failed to add account',
+        error: translatedError('error.saveAccountFailed', error),
         isLoading: false,
       })
       throw error
@@ -80,7 +85,7 @@ export const useAccountStore = create<AccountState>()((set, get) => ({
     } catch (error) {
       logger.error('Failed to set current account', { error: String(error) })
       set({
-        error: error instanceof Error ? error.message : 'Failed to set current account',
+        error: translatedError('error.noActiveAccount', error),
         isLoading: false,
       })
       throw error
@@ -99,7 +104,7 @@ export const useAccountStore = create<AccountState>()((set, get) => ({
     } catch (error) {
       logger.error('Failed to delete account', { error: String(error) })
       set({
-        error: error instanceof Error ? error.message : 'Failed to delete account',
+        error: translatedError('error.deleteAccountFailed', error),
         isLoading: false,
       })
       throw error
@@ -118,7 +123,7 @@ export const useAccountStore = create<AccountState>()((set, get) => ({
     } catch (error) {
       logger.error('Failed to update account', { error: String(error) })
       set({
-        error: error instanceof Error ? error.message : 'Failed to update account',
+        error: translatedError('account.updateFailed', error),
         isLoading: false,
       })
       throw error

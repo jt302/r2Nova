@@ -26,6 +26,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { Alert, AlertDescription } from '@/components/ui/alert'
+import { cn } from '@/lib/utils'
 
 interface AccountManagerProps {
   onAccountSelect: (accountId: string) => void
@@ -133,15 +134,15 @@ export function AccountManager({ onAccountSelect }: AccountManagerProps) {
   }
 
   return (
-    <div className="p-8 max-w-5xl mx-auto">
-      <div className="flex justify-between items-end mb-8">
-        <div>
-          <h2 className="text-3xl font-extrabold tracking-tight leading-none mb-2">
+    <div className="mx-auto w-full max-w-5xl p-4 sm:p-6 lg:p-8">
+      <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+        <div className="min-w-0">
+          <h2 className="mb-2 text-2xl font-extrabold leading-tight tracking-tight sm:text-3xl">
             {t('account.cloudflareR2Accounts')}
           </h2>
           <p className="text-muted-foreground">{t('account.manageVaults')}</p>
         </div>
-        <Button onClick={() => setIsAdding(true)} className="gap-2">
+        <Button onClick={() => setIsAdding(true)} className="w-full gap-2 sm:w-auto">
           <PlusCircle className="w-5 h-5" />
           {t('account.addNewAccount')}
         </Button>
@@ -161,10 +162,13 @@ export function AccountManager({ onAccountSelect }: AccountManagerProps) {
           </div>
         ) : (
           accounts.map(account => (
-            <Card key={account.id} className={account.is_active ? 'border-primary/50' : ''}>
-              <CardContent className="p-6">
+            <Card
+              key={account.id}
+              className={cn('relative', account.is_active && 'border-primary/50')}
+            >
+              <CardContent className="p-4 sm:p-6">
                 {account.is_active && (
-                  <div className="absolute top-4 right-4">
+                  <div className="mb-4 flex justify-end sm:absolute sm:right-4 sm:top-4 sm:mb-0">
                     <Badge variant="outline" className="gap-1.5">
                       <span className="w-1.5 h-1.5 bg-primary rounded-full animate-pulse" />
                       {t('account.currentlyActive')}
@@ -172,27 +176,27 @@ export function AccountManager({ onAccountSelect }: AccountManagerProps) {
                   </div>
                 )}
 
-                <div className="flex items-start gap-6">
+                <div className="flex flex-col gap-4 md:flex-row md:items-start md:gap-6">
                   <div className="w-12 h-12 flex-shrink-0 rounded-lg bg-muted flex items-center justify-center text-primary border">
                     <Network className="w-8 h-8" />
                   </div>
 
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-4">
-                      <h3 className="text-xl font-bold">{account.name}</h3>
-                      <span className="text-muted-foreground text-xs font-mono">
+                  <div className="min-w-0 flex-1">
+                    <div className="mb-4 flex min-w-0 flex-col gap-1 sm:flex-row sm:items-center sm:gap-3">
+                      <h3 className="min-w-0 truncate text-xl font-bold">{account.name}</h3>
+                      <span className="truncate text-xs font-mono text-muted-foreground">
                         {account.endpoint.slice(0, 20)}...
                       </span>
                     </div>
 
-                    <div className="grid grid-cols-3 gap-8">
-                      <div>
+                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3 xl:gap-8">
+                      <div className="min-w-0">
                         <Label className="text-xs uppercase tracking-wider text-muted-foreground">
                           {t('account.endpoint')}
                         </Label>
                         <p className="text-sm font-mono truncate mt-1">{account.endpoint}</p>
                       </div>
-                      <div>
+                      <div className="min-w-0">
                         <Label className="text-xs uppercase tracking-wider text-muted-foreground">
                           {t('account.accessKeyId')}
                         </Label>
@@ -200,7 +204,7 @@ export function AccountManager({ onAccountSelect }: AccountManagerProps) {
                           {account.access_key_id.substring(0, 8)}...
                         </p>
                       </div>
-                      <div>
+                      <div className="min-w-0">
                         <Label className="text-xs uppercase tracking-wider text-muted-foreground">
                           {t('account.status')}
                         </Label>
@@ -212,7 +216,7 @@ export function AccountManager({ onAccountSelect }: AccountManagerProps) {
                     </div>
                   </div>
 
-                  <div className="flex flex-col gap-2">
+                  <div className="flex shrink-0 gap-2 md:flex-col">
                     <Button variant="ghost" size="icon" onClick={() => handleEdit(account)}>
                       <Pencil className="w-5 h-5" />
                     </Button>
@@ -227,7 +231,7 @@ export function AccountManager({ onAccountSelect }: AccountManagerProps) {
                   </div>
                 </div>
 
-                <div className="mt-4 pt-4 border-t flex justify-end">
+                <div className="mt-4 flex justify-end border-t pt-4">
                   <Button
                     onClick={() => onAccountSelect(account.id)}
                     disabled={account.is_active}
@@ -259,7 +263,7 @@ export function AccountManager({ onAccountSelect }: AccountManagerProps) {
               </Alert>
             )}
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="name">{t('account.accountName')}</Label>
                 <Input
@@ -327,7 +331,7 @@ export function AccountManager({ onAccountSelect }: AccountManagerProps) {
               </Alert>
             )}
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="edit-name">{t('account.accountName')}</Label>
                 <Input

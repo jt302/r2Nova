@@ -9,7 +9,7 @@ export interface I18nState {
   t: (key: string) => string
 }
 
-const translations: Record<Language, Record<string, string>> = {
+export const translations: Record<Language, Record<string, string>> = {
   'zh-CN': {
     'app.title': 'R2Nova',
     'app.noAccount': '尚未选择账号',
@@ -29,6 +29,17 @@ const translations: Record<Language, Record<string, string>> = {
     'account.fillAllFields': '请填写所有字段',
     'account.addFailed': '添加账号失败',
     'account.confirmDelete': '确定要删除这个账号吗？',
+    'account.title': '账号管理',
+    'account.add': '添加账号',
+    'account.edit': '编辑账号',
+    'account.delete': '删除账号',
+    'account.name': '账号名称',
+    'account.accessKey': 'Access Key ID',
+    'account.secretKey': 'Secret Access Key',
+    'account.save': '保存账号',
+    'account.cancel': '取消',
+    'account.selectAccount': '选择此账号',
+    'account.current': '当前账号',
     'account.currentlyActive': '当前激活',
     'account.endpoint': '端点',
     'account.accessKeyId': 'Access Key ID',
@@ -170,8 +181,8 @@ const translations: Record<Language, Record<string, string>> = {
     'dialog.operations': '操作',
     'dialog.status': '状态',
 
-    'app.tagline': '',
-    'app.fullName': '',
+    'app.tagline': '像本地文件一样管理 Cloudflare R2',
+    'app.fullName': 'R2Nova',
 
     'transfer.newTransfer': '新传输',
     'transfer.uploading': '上传中',
@@ -191,6 +202,7 @@ const translations: Record<Language, Record<string, string>> = {
     'theme.system': '跟随系统',
     'error.network': '网络连接失败',
     'error.auth': '认证失败',
+    'error.noActiveAccount': '没有当前账号',
     'error.unknown': '未知错误',
   },
   en: {
@@ -376,8 +388,8 @@ const translations: Record<Language, Record<string, string>> = {
     'theme.lightMode': 'Light Mode',
     'theme.system': 'System',
 
-    'app.tagline': '',
-    'app.fullName': '',
+    'app.tagline': 'Manage Cloudflare R2 like local files',
+    'app.fullName': 'R2Nova',
 
     'transfer.newTransfer': 'New Transfer',
 

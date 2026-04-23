@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { BucketInfo, ObjectInfo } from '../types'
 import { bucketService, fileService } from '../services/r2Service'
+import { useI18nStore } from './i18nStore'
 
 interface BucketCache {
   accountId: string
@@ -39,6 +40,11 @@ const CACHE_DURATION = 5 * 60 * 1000
 
 function getCacheKey(accountId: string, bucket: string, prefix: string): string {
   return `${accountId}:${bucket}:${prefix}`
+}
+
+function errorMessage(key: string, fallback: string, error: unknown): string {
+  const message = error instanceof Error ? error.message : useI18nStore.getState().t(key)
+  return `${useI18nStore.getState().t(key)}: ${message || fallback}`
 }
 
 export const useBucketStore = create<BucketState>()((set, get) => ({
@@ -81,9 +87,8 @@ export const useBucketStore = create<BucketState>()((set, get) => ({
       })
       return result
     } catch (error) {
-      const errorMsg = error instanceof Error ? error.message : '加载 Buckets 失败'
       set({
-        error: `加载 Buckets 失败: ${errorMsg}`,
+        error: errorMessage('error.loadBucketsFailed', 'Failed to load buckets', error),
         isLoadingBuckets: false,
       })
       throw error
@@ -133,9 +138,8 @@ export const useBucketStore = create<BucketState>()((set, get) => ({
       })
       return allObjects
     } catch (error) {
-      const errorMsg = error instanceof Error ? error.message : '加载文件列表失败'
       set({
-        error: `加载文件列表失败: ${errorMsg}`,
+        error: errorMessage('error.loadFilesFailed', 'Failed to load file list', error),
         isLoadingObjects: false,
       })
       throw error
