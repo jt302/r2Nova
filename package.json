@@ -31,7 +31,10 @@
     "tauri:build": "tauri build",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "format": "prettier --write \"src/**/*.{ts,tsx}\"",
-    "check": "pnpm lint && tsc --noEmit"
+    "check": "pnpm lint && tsc --noEmit",
+    "test": "pnpm test:frontend && pnpm test:backend",
+    "test:frontend": "node --experimental-strip-types --test src/**/*.test.ts",
+    "test:backend": "cd src-tauri && cargo test"
   },
   "dependencies": {
     "@fontsource-variable/geist": "^5.2.8",

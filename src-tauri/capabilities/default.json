@@ -10,15 +10,8 @@
     "core:event:allow-listen",
     "core:window:allow-start-dragging",
     "dialog:default",
-    "fs:default",
     "fs:allow-read-file",
     "fs:allow-write-file",
-    "fs:allow-read-dir",
-    "fs:allow-copy-file",
-    "fs:allow-mkdir",
-    "fs:allow-remove",
-    "fs:allow-rename",
-    "shell:default",
     "shell:allow-open"
   ]
 }
