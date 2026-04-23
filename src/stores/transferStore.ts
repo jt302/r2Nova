@@ -41,13 +41,18 @@ interface TransferFailedPayload {
 interface TransferStore {
   tasks: TransferTask[]
   addTask: (task: TransferTask) => void
-  updateProgress: (taskId: string, bytesTransferred: number, bytesTotal: number, speedMbps: number) => void
+  updateProgress: (
+    taskId: string,
+    bytesTransferred: number,
+    bytesTotal: number,
+    speedMbps: number
+  ) => void
   completeTask: (taskId: string) => void
   failTask: (taskId: string, error: string) => void
   removeTask: (taskId: string) => void
   clearCompleted: () => void
   // 获取特定 bucket 和 prefix 的上传任务（用于文件列表显示）
-  getUploadTasksForPrefix: () => TransferTask[]
+  getUploadTasksForPrefix: (bucket: string, prefix: string) => TransferTask[]
   // 文件列表刷新回调
   onUploadCompleted: ((bucket: string, key: string) => void) | null
   setOnUploadCompleted: (callback: ((bucket: string, key: string) => void) | null) => void
@@ -59,7 +64,11 @@ export const useTransferStore = create<TransferStore>(set => ({
 
   addTask: task =>
     set(state => ({
-      tasks: [...state.tasks, task],
+      tasks: state.tasks.some(existing => existing.id === task.id)
+        ? state.tasks.map(existing =>
+            existing.id === task.id ? { ...existing, ...task } : existing
+          )
+        : [...state.tasks, task],
     })),
 
   updateProgress: (taskId, bytesTransferred, bytesTotal, speedMbps) =>
@@ -96,8 +105,12 @@ export const useTransferStore = create<TransferStore>(set => ({
       tasks: state.tasks.filter(task => task.status !== 'completed'),
     })),
 
-  getUploadTasksForPrefix: (): TransferTask[] => {
-    return []
+  getUploadTasksForPrefix: (bucket, prefix): TransferTask[] => {
+    return useTransferStore
+      .getState()
+      .tasks.filter(
+        task => task.type === 'upload' && task.bucket === bucket && task.key.startsWith(prefix)
+      )
   },
 
   setOnUploadCompleted: callback =>
@@ -133,7 +146,12 @@ export function initTransferListeners() {
         speedMbps: payload.speed_mbps,
       })
     } else {
-      store.updateProgress(payload.task_id, payload.bytes_transferred, payload.bytes_total, payload.speed_mbps)
+      store.updateProgress(
+        payload.task_id,
+        payload.bytes_transferred,
+        payload.bytes_total,
+        payload.speed_mbps
+      )
     }
   })
 

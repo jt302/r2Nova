@@ -45,6 +45,7 @@ import {
 } from '@/components/ui/dialog'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { cn } from '@/lib/utils'
+import { buildFolderKey } from '@/lib/objectKeys'
 
 interface BucketBrowserProps {
   account: Account
@@ -77,6 +78,7 @@ export function BucketBrowser({ account, selectedBucket, onBucketSelect }: Bucke
 
   const {
     bucketCache,
+    objectsCache,
     isLoadingBuckets,
     isLoadingObjects,
     error: storeError,
@@ -88,18 +90,15 @@ export function BucketBrowser({ account, selectedBucket, onBucketSelect }: Bucke
     removeObjectFromCache,
   } = useBucketStore()
 
-  const loadedRef = useRef<{ buckets: boolean; objects: boolean }>({
-    buckets: false,
-    objects: false,
-  })
+  const loadedBucketsRef = useRef(false)
 
   useEffect(() => {
-    loadedRef.current = { buckets: false, objects: false }
+    loadedBucketsRef.current = false
   }, [account.id])
 
   useEffect(() => {
-    if (!loadedRef.current.buckets) {
-      loadedRef.current.buckets = true
+    if (!loadedBucketsRef.current) {
+      loadedBucketsRef.current = true
       loadBuckets(account.id).then(buckets => {
         const currentSelected =
           selectedBucket && buckets.find(b => b.name === selectedBucket)
@@ -116,8 +115,7 @@ export function BucketBrowser({ account, selectedBucket, onBucketSelect }: Bucke
   }, [account.id, loadBuckets, selectedBucket, onBucketSelect])
 
   useEffect(() => {
-    if (selectedBucket && !loadedRef.current.objects) {
-      loadedRef.current.objects = true
+    if (selectedBucket) {
       loadObjects(account.id, selectedBucket, currentPrefix)
     }
   }, [account.id, selectedBucket, currentPrefix, loadObjects])
@@ -129,16 +127,12 @@ export function BucketBrowser({ account, selectedBucket, onBucketSelect }: Bucke
   }, [selectedBucket, setSelectedBucket])
 
   useEffect(() => {
-    loadedRef.current.objects = false
-  }, [selectedBucket, currentPrefix])
-
-  useEffect(() => {
     useTransferStore.getState().setOnUploadCompleted((bucket: string, key: string) => {
       if (bucket === selectedBucket && key.startsWith(currentPrefix)) {
         // 上传完成后只把新文件追加进缓存，避免整个列表刷新
-        const task = useTransferStore.getState().tasks.find(
-          t => t.key === key && t.bucket === bucket
-        )
+        const task = useTransferStore
+          .getState()
+          .tasks.find(t => t.key === key && t.bucket === bucket)
         addObjectToCache(account.id, bucket, currentPrefix, {
           key,
           size: task?.bytesTotal || 0,
@@ -168,7 +162,6 @@ export function BucketBrowser({ account, selectedBucket, onBucketSelect }: Bucke
   }, [])
 
   const handleRefresh = () => {
-    loadedRef.current = { buckets: true, objects: true }
     loadBuckets(account.id, true)
     if (selectedBucket) {
       loadObjects(account.id, selectedBucket, currentPrefix, true)
@@ -177,7 +170,6 @@ export function BucketBrowser({ account, selectedBucket, onBucketSelect }: Bucke
 
   const handleBucketClick = (bucketName: string) => {
     if (bucketName !== selectedBucket) {
-      loadedRef.current.objects = false
       setCurrentPrefix('')
       onBucketSelect(bucketName)
     }
@@ -185,7 +177,6 @@ export function BucketBrowser({ account, selectedBucket, onBucketSelect }: Bucke
 
   const handleObjectClick = (obj: ObjectInfo) => {
     if (obj.is_directory) {
-      loadedRef.current.objects = false
       setCurrentPrefix(obj.key)
     }
   }
@@ -198,7 +189,6 @@ export function BucketBrowser({ account, selectedBucket, onBucketSelect }: Bucke
   const handleBreadcrumbClick = (index: number) => {
     const parts = getBreadcrumbParts()
     const newPrefix = index === -1 ? '' : parts.slice(0, index + 1).join('/') + '/'
-    loadedRef.current.objects = false
     setCurrentPrefix(newPrefix)
   }
 
@@ -206,7 +196,6 @@ export function BucketBrowser({ account, selectedBucket, onBucketSelect }: Bucke
     if (!currentPrefix) return
     const parts = currentPrefix.split('/').filter(Boolean)
     parts.pop()
-    loadedRef.current.objects = false
     setCurrentPrefix(parts.length > 0 ? parts.join('/') + '/' : '')
   }
 
@@ -226,13 +215,13 @@ export function BucketBrowser({ account, selectedBucket, onBucketSelect }: Bucke
       return
     }
 
-    const key = currentPrefix + folderName + '/'
+    const key = buildFolderKey(currentPrefix, folderName)
 
     setCreatingFolder(true)
     setLocalError(null)
     setIsFolderDialogOpen(false)
     try {
-      await fileService.createFolder(selectedBucket, folderName)
+      await fileService.createFolder(selectedBucket, key)
       addObjectToCache(account.id, selectedBucket, currentPrefix, {
         key: key,
         size: 0,
@@ -347,8 +336,6 @@ export function BucketBrowser({ account, selectedBucket, onBucketSelect }: Bucke
     }
   }
 
-  const addTask = useTransferStore(state => state.addTask)
-
   const handleDownload = async (obj: ObjectInfo) => {
     if (!selectedBucket || obj.is_directory) return
 
@@ -358,20 +345,7 @@ export function BucketBrowser({ account, selectedBucket, onBucketSelect }: Bucke
     setLocalError(null)
     try {
       // Start download - returns immediately with task_id, download runs in background
-      const taskId = await fileService.downloadFile(selectedBucket, obj.key, savePath)
-
-      // Add task to store for tracking in TransferCenter
-      addTask({
-        id: taskId,
-        type: 'download',
-        status: 'in_progress',
-        filename: obj.key.split('/').pop() || obj.key,
-        bucket: selectedBucket,
-        key: obj.key,
-        bytesTotal: obj.size,
-        bytesTransferred: 0,
-        speedMbps: 0,
-      })
+      await fileService.downloadFile(selectedBucket, obj.key, savePath)
 
       // Show brief feedback then clear the downloading state
       setDownloading(obj.key)
@@ -388,7 +362,6 @@ export function BucketBrowser({ account, selectedBucket, onBucketSelect }: Bucke
     setLocalError(null)
     try {
       await fileService.abortMultipartUpload(selectedBucket, obj.key, obj.upload_id)
-      loadedRef.current.objects = false
       await loadObjects(account.id, selectedBucket, currentPrefix, true)
     } catch (err) {
       setLocalError(err instanceof Error ? err.message : t('bucket.cancelUploadError'))
@@ -404,10 +377,10 @@ export function BucketBrowser({ account, selectedBucket, onBucketSelect }: Bucke
   }
 
   const buckets = bucketCache?.buckets || []
-  const objects = useMemo(
-    () => getCachedObjects(account.id, selectedBucket ?? '', currentPrefix) ?? [],
-    [getCachedObjects, account.id, selectedBucket, currentPrefix]
-  )
+  const objects = useMemo(() => {
+    void objectsCache
+    return getCachedObjects(account.id, selectedBucket ?? '', currentPrefix) ?? []
+  }, [getCachedObjects, objectsCache, account.id, selectedBucket, currentPrefix])
   const error = localError || storeError
   const isLoading = isLoadingBuckets || isLoadingObjects
 
@@ -446,8 +419,8 @@ export function BucketBrowser({ account, selectedBucket, onBucketSelect }: Bucke
   }, [objects, uploadingTasks])
 
   return (
-    <div className="flex h-full">
-      <aside className="w-64 bg-card border-r flex flex-col">
+    <div className="flex h-full min-w-0">
+      <aside className="hidden w-56 shrink-0 bg-card border-r flex-col lg:flex xl:w-64">
         <div className="flex items-center justify-between p-4 border-b">
           <h3 className="font-bold">{t('bucket.title')}</h3>
           <Button variant="ghost" size="icon" onClick={handleRefresh} disabled={isLoading}>
@@ -479,20 +452,26 @@ export function BucketBrowser({ account, selectedBucket, onBucketSelect }: Bucke
       </aside>
 
       <main className="flex-1 flex flex-col min-w-0 bg-background">
-        <div className="flex items-center justify-between px-6 py-4 border-b">
-          <Breadcrumb>
-            <BreadcrumbList>
+        <div className="flex flex-col gap-3 border-b px-4 py-4 lg:flex-row lg:items-center lg:justify-between lg:px-6">
+          <Breadcrumb className="min-w-0">
+            <BreadcrumbList className="flex-nowrap overflow-hidden">
               {selectedBucket && (
-                <BreadcrumbItem>
-                  <BreadcrumbLink onClick={() => handleBreadcrumbClick(-1)}>
+                <BreadcrumbItem className="min-w-0">
+                  <BreadcrumbLink
+                    onClick={() => handleBreadcrumbClick(-1)}
+                    className="block max-w-40 truncate"
+                  >
                     {selectedBucket}
                   </BreadcrumbLink>
                 </BreadcrumbItem>
               )}
               {getBreadcrumbParts().map((part, index) => (
-                <BreadcrumbItem key={index}>
+                <BreadcrumbItem key={index} className="min-w-0">
                   <BreadcrumbSeparator />
-                  <BreadcrumbLink onClick={() => handleBreadcrumbClick(index)}>
+                  <BreadcrumbLink
+                    onClick={() => handleBreadcrumbClick(index)}
+                    className="block max-w-32 truncate"
+                  >
                     {part}
                   </BreadcrumbLink>
                 </BreadcrumbItem>
@@ -500,7 +479,7 @@ export function BucketBrowser({ account, selectedBucket, onBucketSelect }: Bucke
             </BreadcrumbList>
           </Breadcrumb>
 
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             {currentPrefix && (
               <Button variant="outline" size="sm" onClick={handleNavigateUp}>
                 <ArrowUp className="w-4 h-4 mr-2" />
