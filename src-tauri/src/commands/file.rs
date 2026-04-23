@@ -106,48 +106,81 @@ pub async fn upload_file(
     let secret_key = config_manager.get_secret_key(&account.id)?;
     drop(config_manager);
 
-    let mut r2_manager = state.r2_manager.lock().await;
-    let client = r2_manager.get_or_create(&account, &secret_key).await?;
-
-    let mut transfer_manager = state.transfer_manager.lock().await;
-    let task_id = transfer_manager.create_upload_task(
-        request.bucket.clone(),
-        request.key.clone(),
-        request.local_path.clone(),
-        total_bytes,
-    );
-    drop(transfer_manager);
-
-    let state_for_callback = state.clone();
-    let task_id_for_callback = task_id.clone();
-
-    let result = client
-        .upload_object_with_progress(
-            &request.bucket,
-            &request.key,
-            &path,
+    let task_id = {
+        let mut transfer_manager = state.transfer_manager.lock().await;
+        transfer_manager.create_upload_task(
+            request.bucket.clone(),
+            request.key.clone(),
+            request.local_path.clone(),
             total_bytes,
-            move |bytes_transferred, speed_mbps| {
-                if let Ok(mut tm) = state_for_callback.transfer_manager.try_lock() {
-                    let _ =
-                        tm.update_progress(&task_id_for_callback, bytes_transferred, speed_mbps);
-                }
-            },
+        )
+    };
+
+    let task_id_clone = task_id.clone();
+    let bucket = request.bucket.clone();
+    let key = request.key.clone();
+    let r2_manager_arc = Arc::clone(&state.r2_manager);
+    let transfer_manager_arc = Arc::clone(&state.transfer_manager);
+
+    tokio::spawn(async move {
+        let result = upload_in_background(
+            r2_manager_arc.clone(),
+            transfer_manager_arc.clone(),
+            account,
+            secret_key,
+            bucket,
+            key,
+            path,
+            total_bytes,
+            task_id_clone.clone(),
         )
         .await;
 
-    let mut transfer_manager = state.transfer_manager.lock().await;
-    match result {
-        Ok(()) => {
-            transfer_manager.complete_task(&task_id)?;
-            Ok(ApiResponse::success(TransferResponse { task_id }))
+        let mut transfer_manager = transfer_manager_arc.lock().await;
+        match result {
+            Ok(()) => {
+                let _ = transfer_manager.complete_task(&task_id_clone);
+            }
+            Err(e) => {
+                let _ = transfer_manager.fail_task(&task_id_clone, e.to_string());
+            }
         }
-        Err(e) => {
-            let error_msg = e.to_string();
-            let _ = transfer_manager.fail_task(&task_id, error_msg.clone());
-            Err(e)
-        }
-    }
+    });
+
+    Ok(ApiResponse::success(TransferResponse { task_id }))
+}
+
+#[allow(clippy::too_many_arguments)]
+async fn upload_in_background(
+    r2_manager: Arc<tokio::sync::Mutex<crate::services::R2ClientManager>>,
+    transfer_manager: Arc<tokio::sync::Mutex<crate::services::TransferManager>>,
+    account: crate::models::Account,
+    secret_key: String,
+    bucket: String,
+    key: String,
+    path: PathBuf,
+    total_bytes: i64,
+    task_id: String,
+) -> Result<(), AppError> {
+    let mut r2_manager = r2_manager.lock().await;
+    let client = r2_manager.get_or_create(&account, &secret_key).await?;
+    let transfer_manager_for_progress = Arc::clone(&transfer_manager);
+    let task_id_for_progress = task_id.clone();
+
+    client
+        .upload_object_with_progress(
+            &bucket,
+            &key,
+            &path,
+            total_bytes,
+            move |bytes_transferred, speed_mbps| {
+                if let Ok(mut tm) = transfer_manager_for_progress.try_lock() {
+                    let _ =
+                        tm.update_progress(&task_id_for_progress, bytes_transferred, speed_mbps);
+                }
+            },
+        )
+        .await
 }
 
 #[command]
@@ -218,26 +251,9 @@ pub async fn download_file(
         match result {
             Ok(()) => {
                 let _ = transfer_manager.complete_task(&task_id_clone);
-                let _ = app_handle.emit(
-                    "transfer-completed",
-                    serde_json::json!({
-                        "task_id": task_id_clone,
-                        "transfer_type": "download",
-                        "bucket": bucket,
-                        "key": key,
-                    }),
-                );
             }
             Err(e) => {
-                let error_msg = e.to_string();
-                let _ = transfer_manager.fail_task(&task_id_clone, error_msg.clone());
-                let _ = app_handle.emit(
-                    "transfer-failed",
-                    serde_json::json!({
-                        "task_id": task_id_clone,
-                        "error": error_msg,
-                    }),
-                );
+                let _ = transfer_manager.fail_task(&task_id_clone, e.to_string());
             }
         }
     });

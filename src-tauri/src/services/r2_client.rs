@@ -8,6 +8,68 @@ use tracing::{error, info};
 use crate::errors::{AppError, AppResult};
 use crate::models::{Account, BucketInfo, ObjectInfo};
 
+type ObjectTimestamp = Option<chrono::DateTime<chrono::Utc>>;
+
+fn folder_key(key: &str) -> String {
+    if key.ends_with('/') {
+        key.to_string()
+    } else {
+        format!("{}/", key)
+    }
+}
+
+fn normalized_prefix(prefix: Option<&str>) -> Option<String> {
+    prefix.filter(|value| !value.is_empty()).map(folder_key)
+}
+
+fn object_info_from_common_prefix(prefix: &str) -> Option<ObjectInfo> {
+    if prefix.is_empty() {
+        return None;
+    }
+
+    Some(ObjectInfo {
+        key: folder_key(prefix),
+        size: 0,
+        last_modified: None,
+        etag: None,
+        is_directory: true,
+    })
+}
+
+fn object_info_from_listed_object(
+    key: &str,
+    size: i64,
+    last_modified: ObjectTimestamp,
+    etag: Option<String>,
+    prefix: Option<&str>,
+) -> Option<ObjectInfo> {
+    if key.is_empty() {
+        return None;
+    }
+
+    let remainder = match normalized_prefix(prefix) {
+        Some(prefix) => {
+            if key == prefix {
+                return None;
+            }
+            key.strip_prefix(&prefix)?
+        }
+        None => key,
+    };
+
+    if remainder.is_empty() || remainder.contains('/') {
+        return None;
+    }
+
+    Some(ObjectInfo {
+        key: key.to_string(),
+        size,
+        last_modified,
+        etag,
+        is_directory: key.ends_with('/'),
+    })
+}
+
 pub struct R2Client {
     client: Client,
 }
@@ -110,7 +172,12 @@ impl R2Client {
             bucket, prefix
         );
 
-        let mut req = self.client.list_objects_v2().bucket(bucket).max_keys(100);
+        let mut req = self
+            .client
+            .list_objects_v2()
+            .bucket(bucket)
+            .delimiter("/")
+            .max_keys(100);
 
         if let Some(prefix) = prefix {
             req = req.prefix(prefix);
@@ -148,36 +215,22 @@ impl R2Client {
             }
         };
 
-        let objects: Vec<ObjectInfo> = resp
-            .contents()
+        let mut objects: Vec<ObjectInfo> = resp
+            .common_prefixes()
             .iter()
-            .filter(|obj| {
-                // 过滤掉与 prefix 完全匹配的目录本身
-                // 例如：prefix="images/" 时，过滤掉 key="images/" 的对象
-                let key = obj.key().unwrap_or("");
-                if let Some(prefix) = prefix {
-                    // 标准化 prefix 比较（处理带/不带斜杠的情况）
-                    let normalized_prefix = if prefix.ends_with('/') {
-                        prefix.to_string()
-                    } else {
-                        format!("{}/", prefix)
-                    };
-                    if key == normalized_prefix {
-                        return false;
-                    }
-                }
-                true
-            })
-            .map(|obj| ObjectInfo {
-                key: obj.key().unwrap_or("").to_string(),
-                size: obj.size().unwrap_or(0),
-                last_modified: obj
-                    .last_modified()
-                    .and_then(|d| chrono::DateTime::from_timestamp(d.secs(), d.subsec_nanos())),
-                etag: obj.e_tag().map(|e| e.to_string()),
-                is_directory: obj.key().map(|k| k.ends_with('/')).unwrap_or(false),
-            })
+            .filter_map(|prefix| prefix.prefix().and_then(object_info_from_common_prefix))
             .collect();
+
+        objects.extend(resp.contents().iter().filter_map(|obj| {
+            object_info_from_listed_object(
+                obj.key().unwrap_or(""),
+                obj.size().unwrap_or(0),
+                obj.last_modified()
+                    .and_then(|d| chrono::DateTime::from_timestamp(d.secs(), d.subsec_nanos())),
+                obj.e_tag().map(|e| e.to_string()),
+                prefix,
+            )
+        }));
 
         let next_token = resp.next_continuation_token().map(|s| s.to_string());
 
@@ -602,11 +655,7 @@ impl R2Client {
 
     pub async fn create_folder(&self, bucket: &str, key: &str) -> AppResult<()> {
         // 确保 key 以 / 结尾表示这是一个目录
-        let folder_key = if key.ends_with('/') {
-            key.to_string()
-        } else {
-            format!("{}/", key)
-        };
+        let folder_key = folder_key(key);
 
         // 创建空对象表示目录
         self.client
@@ -632,11 +681,7 @@ impl R2Client {
         F: FnMut(usize, usize) + Send,
     {
         // 确保 key 以 / 结尾，以便删除该前缀的所有对象
-        let folder_prefix = if key.ends_with('/') {
-            key.to_string()
-        } else {
-            format!("{}/", key)
-        };
+        let folder_prefix = folder_key(key);
 
         info!("Deleting folder and contents: {}", folder_prefix);
 
@@ -750,11 +795,7 @@ impl R2Client {
         limit: i32,
     ) -> AppResult<(Vec<ObjectInfo>, bool)> {
         // 确保 key 以 / 结尾，以便匹配该前缀的所有对象
-        let folder_prefix = if key.ends_with('/') {
-            key.to_string()
-        } else {
-            format!("{}/", key)
-        };
+        let folder_prefix = folder_key(key);
 
         info!(
             "Previewing folder contents: {} (limit: {})",
@@ -929,5 +970,43 @@ impl R2ClientManager {
 
     pub fn remove(&mut self, account_id: &str) {
         self.clients.remove(account_id);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{folder_key, object_info_from_common_prefix, object_info_from_listed_object};
+
+    #[test]
+    fn folder_key_adds_trailing_slash() {
+        assert_eq!(folder_key("photos/2026/raw"), "photos/2026/raw/");
+    }
+
+    #[test]
+    fn folder_key_keeps_existing_trailing_slash() {
+        assert_eq!(folder_key("photos/2026/raw/"), "photos/2026/raw/");
+    }
+
+    #[test]
+    fn common_prefix_becomes_directory_object() {
+        let directory = object_info_from_common_prefix("photos/").expect("directory object");
+
+        assert_eq!(directory.key, "photos/");
+        assert!(directory.is_directory);
+        assert_eq!(directory.size, 0);
+    }
+
+    #[test]
+    fn current_prefix_marker_is_filtered() {
+        let object = object_info_from_listed_object("photos/", 0, None, None, Some("photos/"));
+
+        assert!(object.is_none());
+    }
+
+    #[test]
+    fn nested_object_is_not_shown_as_direct_child() {
+        let object = object_info_from_listed_object("photos/2026/raw.jpg", 12, None, None, None);
+
+        assert!(object.is_none());
     }
 }
