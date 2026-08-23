@@ -118,6 +118,7 @@ export const api = {
 	costEstimate: (classA: number, classB: number) =>
 		tauriInvoke<number>('cost_estimate', { classA, classB }),
 	appVersion: () => tauriInvoke<string>('app_version'),
+	installKind: () => tauriInvoke<'native' | 'appimage' | 'linux-pkg'>('install_kind'),
 	cfCreateBucket: (profileId: string, name: string) =>
 		tauriInvoke<void>('cf_create_bucket', { profileId, name }),
 	cfDeleteBucket: (profileId: string, name: string) =>

@@ -35,6 +35,10 @@ export function AboutDialog() {
 	const [installing, setInstalling] = useState(false);
 	const [progress, setProgress] = useState(0);
 	const { data: version } = useQuery({ queryKey: queryKeys.version, queryFn: api.appVersion });
+	const { data: installKind } = useQuery({
+		queryKey: queryKeys.installKind,
+		queryFn: api.installKind,
+	});
 	const {
 		data: latest,
 		isFetching,
@@ -45,6 +49,7 @@ export function AboutDialog() {
 		retry: false,
 		staleTime: 60_000,
 	});
+	const linuxPkg = installKind === 'linux-pkg';
 
 	if (!version) {
 		return null;
@@ -71,6 +76,13 @@ export function AboutDialog() {
 	}
 
 	async function onUpdate() {
+		if (!installKind) {
+			return;
+		}
+		if (linuxPkg) {
+			await openUrl(`${REPO_URL}/releases`);
+			return;
+		}
 		setError(false);
 		setInstalling(true);
 		setProgress(0);
@@ -183,8 +195,8 @@ export function AboutDialog() {
 						{isFetching ? t('about.checking') : t('about.checkForUpdates')}
 					</Button>
 					{hasUpdate ? (
-						<Button disabled={installing} onClick={() => void onUpdate()}>
-							{t('about.updateAndRestart')}
+						<Button disabled={installing || !installKind} onClick={() => void onUpdate()}>
+							{linuxPkg ? t('about.downloadFromReleases') : t('about.updateAndRestart')}
 						</Button>
 					) : null}
 					<DialogClose asChild>

@@ -47,6 +47,7 @@ pub fn run() {
 		.invoke_handler(tauri::generate_handler![
 			ping,
 			app_version,
+			install_kind,
 			reveal_item,
 			list_profiles,
 			upsert_profile,

@@ -12,6 +12,7 @@ export const queryKeys = {
 	cost: ['cost'] as const,
 	version: ['version'] as const,
 	appUpdate: ['app-update'] as const,
+	installKind: ['install-kind'] as const,
 	transfers: ['transfers'] as const,
 	multipart: (profileId: string, bucket: string) => ['multipart', profileId, bucket] as const,
 	cf: {
