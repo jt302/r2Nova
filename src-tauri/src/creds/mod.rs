@@ -111,12 +111,14 @@ pub fn init_keyring() -> AppResult<()> {
 			.map_err(|e| AppError::Keyring(e.to_string()))?;
 		keyring_core::set_default_store(store);
 	}
-	#[cfg(not(any(target_os = "macos", target_os = "windows")))]
+	#[cfg(target_os = "linux")]
 	{
-		let store =
-			keyring_core::mock::Store::new().map_err(|e| AppError::Keyring(e.to_string()))?;
+		let store = dbus_secret_service_keyring_store::store::Store::new()
+			.map_err(|e| AppError::Keyring(e.to_string()))?;
 		keyring_core::set_default_store(store);
 	}
+	#[cfg(not(any(target_os = "macos", target_os = "windows", target_os = "linux")))]
+	compile_error!("keyring: unsupported OS");
 	Ok(())
 }
 
