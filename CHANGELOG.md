@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.4
+
+- Linux x86_64 packages: `.deb`, `.rpm`, and AppImage built on Ubuntu 22.04
+- Store credentials in Secret Service; in-app updates apply to AppImage only
+
 ## 0.1.3
 
 - Check and install updates from the version dialog in the titlebar
