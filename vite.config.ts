@@ -30,8 +30,13 @@ export default defineConfig({
 		},
 	},
 	build: {
-		// WebView2 is evergreen Chromium; WKWebView on Ventura 13+ is Safari 16.4+.
-		target: process.env.TAURI_ENV_PLATFORM === 'windows' ? 'chrome111' : 'safari18',
+		// WebView2 = Chromium; WKWebView on Ventura 13+ ≈ Safari 18; WebKitGTK 4.1 ≈ Safari 16.
+		target:
+			process.env.TAURI_ENV_PLATFORM === 'windows'
+				? 'chrome111'
+				: process.env.TAURI_ENV_PLATFORM === 'linux'
+					? 'safari16'
+					: 'safari18',
 		minify: !process.env.TAURI_ENV_DEBUG,
 		sourcemap: !!process.env.TAURI_ENV_DEBUG,
 	},

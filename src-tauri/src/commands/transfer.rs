@@ -19,6 +19,53 @@ pub struct DownloadObjectItem {
 	pub bytes_total: u64,
 }
 
+/// Nautilus / Dolphin may hand Tauri `file://` URIs instead of raw paths.
+pub(crate) fn normalize_drop_path(raw: &str) -> PathBuf {
+	let s = raw.trim();
+	let Some(after_scheme) = s.strip_prefix("file:") else {
+		return PathBuf::from(s);
+	};
+	let rest = after_scheme.strip_prefix("//").unwrap_or(after_scheme);
+	let decoded = percent_decode(rest);
+	let path = if let Some(p) = decoded.strip_prefix("localhost/") {
+		format!("/{p}")
+	} else if decoded.starts_with('/') {
+		decoded
+	} else if let Some((_, p)) = decoded.split_once('/') {
+		format!("/{p}")
+	} else {
+		decoded
+	};
+	PathBuf::from(path)
+}
+
+fn percent_decode(s: &str) -> String {
+	let bytes = s.as_bytes();
+	let mut out = Vec::with_capacity(bytes.len());
+	let mut i = 0;
+	while i < bytes.len() {
+		if bytes[i] == b'%' && i + 2 < bytes.len() {
+			if let (Some(h), Some(l)) = (from_hex(bytes[i + 1]), from_hex(bytes[i + 2])) {
+				out.push((h << 4) | l);
+				i += 3;
+				continue;
+			}
+		}
+		out.push(bytes[i]);
+		i += 1;
+	}
+	String::from_utf8_lossy(&out).into_owned()
+}
+
+fn from_hex(b: u8) -> Option<u8> {
+	match b {
+		b'0'..=b'9' => Some(b - b'0'),
+		b'a'..=b'f' => Some(b - b'a' + 10),
+		b'A'..=b'F' => Some(b - b'A' + 10),
+		_ => None,
+	}
+}
+
 #[tauri::command]
 pub async fn upload_paths(
 	state: State<'_, AppState>,
@@ -31,7 +78,7 @@ pub async fn upload_paths(
 	let client = live_client(&state, &profile_id).await?;
 	let mut jobs = Vec::new();
 	for path in paths {
-		let p = PathBuf::from(&path);
+		let p = normalize_drop_path(&path);
 		if p.is_dir() {
 			jobs.extend(collect_dir_uploads(&prefix, &p).await?);
 		} else {
@@ -225,5 +272,39 @@ pub async fn resume_transfer(
 				.run_download(&client, &job.transfer_id, on_event)
 				.await
 		}
+	}
+}
+
+#[cfg(test)]
+mod tests {
+	use super::normalize_drop_path;
+	use std::path::PathBuf;
+
+	#[test]
+	fn file_uri_becomes_absolute_path() {
+		assert_eq!(
+			normalize_drop_path("file:///tmp/a.bin"),
+			PathBuf::from("/tmp/a.bin")
+		);
+		assert_eq!(
+			normalize_drop_path("file://localhost/tmp/a.bin"),
+			PathBuf::from("/tmp/a.bin")
+		);
+	}
+
+	#[test]
+	fn file_uri_decodes_spaces() {
+		assert_eq!(
+			normalize_drop_path("file:///tmp/my%20file.bin"),
+			PathBuf::from("/tmp/my file.bin")
+		);
+	}
+
+	#[test]
+	fn plain_path_is_unchanged() {
+		assert_eq!(
+			normalize_drop_path("/tmp/a.bin"),
+			PathBuf::from("/tmp/a.bin")
+		);
 	}
 }

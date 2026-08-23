@@ -50,6 +50,7 @@ import { ProfileFormDialog } from '@/features/profile/profile-form-dialog';
 import { TransferPage, useActiveTransferCount } from '@/features/transfer/transfer-page';
 import { api } from '@/shared/api/backend';
 import { queryKeys } from '@/shared/config/query-keys';
+import { modKeyLabel } from '@/shared/lib/mod-key';
 import { SIDEBAR_MAX_PX, SIDEBAR_MIN_PX } from '@/shared/lib/prefs';
 import { applyDocumentTheme, windowTheme } from '@/shared/lib/theme';
 import { useActiveTab, useNavStore } from '@/store/nav';
@@ -206,7 +207,7 @@ export function AppShell() {
 						<span className="truncate">{t('app.searchHint')}</span>
 					</span>
 					<KbdGroup>
-						<Kbd>⌘</Kbd>
+						<Kbd>{modKeyLabel()}</Kbd>
 						<Kbd>K</Kbd>
 					</KbdGroup>
 				</Button>
