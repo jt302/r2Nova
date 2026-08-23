@@ -35,7 +35,7 @@ Transfer progress: one `ipc::Channel` per batch, 200ms throttle on the Rust side
 
 ## Platforms
 
-macOS 13+ (Safari 18 / WKWebView) and Windows 10+ (Chrome 111 / WebView2). No Linux: keeps Vite `build.target` at `safari18` / `chrome111`, allows precompiled Shiki langs, and drops Secret Service fallbacks.
+macOS 13+ (Safari 18 / WKWebView), Windows 10+ (Chrome 111 / WebView2), Linux x86_64 with WebKitGTK 4.1 (Ubuntu 22.04+ / Fedora 38+). Vite `build.target` is `safari18` / `chrome111` / `safari16`. Linux packages are produced on ubuntu-22.04 (glibc 2.35): `.deb`, `.rpm`, and AppImage. In-app updates on Linux only apply to AppImage; distro packages open GitHub Releases. Credentials use the session Secret Service.
 
 ## Related docs
 

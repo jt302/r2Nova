@@ -33,6 +33,8 @@ brew install --cask r2nova
 
 Windows：GitHub Releases 的 NSIS 安装包。
 
+Linux（x86_64，Ubuntu 22.04+ / Fedora 38+，需要 WebKitGTK 4.1）：GitHub Releases 的 `.deb`、`.rpm` 或 AppImage。AppImage 可应用内更新；发行版包装从下一版覆盖安装。无 FUSE 时：`./R2nova.AppImage --appimage-extract-and-run`。NVIDIA 黑屏可试 `WEBKIT_DISABLE_DMABUF_RENDERER=1`。
+
 ## 添加账号
 
 第一次打开会要填一堆字段。对照如下，截图是中文控制台（2026-08）。官方说明：[R2 API tokens](https://developers.cloudflare.com/r2/api/tokens/)。
@@ -96,7 +98,7 @@ pnpm install
 pnpm tauri dev
 ```
 
-需要 Node 24.14.1、Rust 1.94.1、pnpm 10。macOS 13+ / Windows 10+（WebView2）。
+需要 Node 24.14.1、Rust 1.94.1、pnpm 10。macOS 13+ / Windows 10+（WebView2）/ Linux（WebKitGTK 4.1 开发包）。
 
 改 S3 代码前先读 [AGENTS.md](./AGENTS.md) 和 [docs/r2-constraints.md](./docs/r2-constraints.md)。
 

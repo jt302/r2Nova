@@ -33,6 +33,8 @@ brew install --cask r2nova
 
 Windows: GitHub Releases NSIS installer.
 
+Linux (x86_64, Ubuntu 22.04+ / Fedora 38+, needs WebKitGTK 4.1): GitHub Releases `.deb`, `.rpm`, or AppImage. AppImage can self-update; distro packages should be replaced from the next release. If FUSE is missing: `./R2nova.AppImage --appimage-extract-and-run`. NVIDIA + black window: `WEBKIT_DISABLE_DMABUF_RENDERER=1`.
+
 ## Add an account
 
 The add-account form asks for several fields. Screenshots below are from the Chinese dashboard (Aug 2026); English labels differ slightly. Official docs: [R2 API tokens](https://developers.cloudflare.com/r2/api/tokens/).
@@ -96,7 +98,7 @@ pnpm install
 pnpm tauri dev
 ```
 
-Requires Node 24.14.1 (`nvm use`), Rust 1.94.1 (see `rust-toolchain.toml`), pnpm 10. macOS 13+ / Windows 10+ with WebView2.
+Requires Node 24.14.1 (`nvm use`), Rust 1.94.1 (see `rust-toolchain.toml`), pnpm 10. macOS 13+ / Windows 10+ with WebView2 / Linux with WebKitGTK 4.1 dev packages.
 
 ```bash
 pnpm test          # Vitest

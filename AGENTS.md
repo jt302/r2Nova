@@ -10,13 +10,13 @@
 
 | 层 | 选型 |
 | --- | --- |
-| 桌面 | Tauri 2（macOS + Windows，不做 Linux） |
+| 桌面 | Tauri 2（macOS + Windows + Linux x86_64） |
 | 前端 | React 19 + TypeScript + Vite 8 + Tailwind 4 + shadcn/ui |
 | 服务端状态 | TanStack Query |
 | 本地状态 | Zustand（导航栈、选择集、传输队列） |
 | 表格 | TanStack Virtual，固定行高 28px |
 | 后端 | Rust + `aws-sdk-s3` + Cloudflare REST (`reqwest`) |
-| 凭据 | `keyring-core` + 平台 store（钥匙串 / Credential Manager） |
+| 凭据 | `keyring-core` + 平台 store（钥匙串 / Credential Manager / Secret Service） |
 | Lint/Format | Biome（`pnpm check`） |
 | Rust 工具链 | `rust-toolchain.toml` 锁 1.94.1 |
 
@@ -94,6 +94,7 @@ macOS 钥匙串 ACL 与代码签名绑定：未签名 dev build 与已签名 rel
 | Rust | 分片算法、错误码映射、计费分类、key/prefix、凭据 mock store |
 | Vitest | 选择集代数、路径解析。jsdom 需 `src/test-setup.ts` 补 `crypto.getRandomValues` |
 | Windows CI | 无 Playwright（连不上 WKWebView/WebView2） |
+| Linux CI | `ubuntu-22.04`：clippy/test + 系统 WebKitGTK 4.1 依赖；产出 deb/rpm/AppImage |
 | macOS | 手工验证；`tauri-driver` 不支持 macOS |
 
 真实 R2 回归（Put/Get/Delete/分片）用专用测试桶。**不要一上来关掉 checksum**；Cloudflare 已修复 flexible checksums。CRC32 仅 COMPOSITE，FULL_OBJECT 只有 CRC64NVME。
