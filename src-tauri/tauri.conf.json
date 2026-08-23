@@ -58,7 +58,7 @@
 	},
 	"plugins": {
 		"updater": {
-			"pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDY4ODZFNDA4NjE2NUY0MwpSV1JEWHhhR1FHNklCbnBGZmpTaVBPQXRBVTJzaUNlNm9UcU9Md0tSWEdlcmpvU0xWeUwxMm9PTgo=",
+			"pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDk0NkFFODc4QTM4QzgxRjQKUldUMGdZeWplT2hxbER5Ri92MEMyWWxydWNuQzIyRXgxMWR0K0pIM0laR1l1RXR3UWpoNE1jNHUK",
 			"endpoints": ["https://github.com/jt302/R2nova/releases/latest/download/latest.json"]
 		}
 	}
